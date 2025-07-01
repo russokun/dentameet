@@ -1,0 +1,5 @@
+## Pages
+- [Contacto - DentaMeet PacienteFácil | Ponte en contacto con nosotros](/contact): Contáctanos para resolver tus dudas sobre DentaMeet. Estamos aquí para ayudarte a conectar con estudiantes de odontología o encontrar pacientes.
+- [DentaMeet - PacienteFácil | Conectamos estudiantes y pacientes por una salud bucal accesible](/home): Plataforma digital que conecta estudiantes de odontología con pacientes que necesitan tratamientos dentales a bajo costo. Más de 14,000 estudiantes disponibles.
+- [Nosotros - DentaMeet PacienteFácil | Nuestra misión y visión](/about): Conoce más sobre DentaMeet, nuestra misión de facilitar el acceso a la salud bucal y apoyar la formación clínica de estudiantes de odontología.
+- [Registro - DentaMeet PacienteFácil | Únete a nuestra comunidad](/register): Regístrate como paciente o estudiante de odontología en DentaMeet. Accede a tratamientos dentales accesibles o completa tus horas clínicas.
