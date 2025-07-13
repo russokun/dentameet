@@ -5,6 +5,14 @@ import { Helmet } from 'react-helmet';
 import { User, GraduationCap, Mail, Phone, MapPin, Calendar, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { 
+  TRATAMIENTOS, 
+  UNIVERSIDADES, 
+  ETAPAS_FORMACION,
+  REGIONES_CHILE,
+  HORARIOS
+} from '@/lib/zodSchemas';
+import { RegionComunaSelector } from '@/components/ui/RegionComunaSelector';
 
 const Register = () => {
   const [userType, setUserType] = useState('');
@@ -12,6 +20,7 @@ const Register = () => {
     nombre: '',
     email: '',
     telefono: '',
+    region: '',
     comuna: '',
     edad: '',
     tratamientos: [],
@@ -19,25 +28,6 @@ const Register = () => {
     ramo: '',
     etapa: '',
   });
-
-  const comunas = [
-    'Santiago', 'Las Condes', 'Providencia', 'Ñuñoa', 'La Reina', 'Vitacura',
-    'Maipú', 'Puente Alto', 'La Florida', 'San Bernardo', 'Peñalolén', 'Quilicura'
-  ];
-
-  const tratamientos = [
-    'Limpieza Dental', 'Empastes', 'Ortodoncia', 'Endodoncia', 'Extracción',
-    'Blanqueamiento', 'Prótesis', 'Implantes', 'Periodoncia', 'Cirugía Oral'
-  ];
-
-  const universidades = [
-    'Universidad de Chile', 'Universidad Católica', 'Universidad Mayor',
-    'Universidad del Desarrollo', 'Universidad San Sebastián', 'Universidad de los Andes'
-  ];
-
-  const etapas = [
-    '3er Año', '4to Año', '5to Año', '6to Año', 'Internado'
-  ];
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -60,7 +50,7 @@ const Register = () => {
     e.preventDefault();
     
     // Validación básica
-    if (!formData.nombre || !formData.email || !formData.telefono || !formData.comuna) {
+    if (!formData.nombre || !formData.email || !formData.telefono || !formData.region || !formData.comuna) {
       toast({
         title: "Error",
         description: "Por favor completa todos los campos obligatorios",
@@ -91,6 +81,7 @@ const Register = () => {
       nombre: '',
       email: '',
       telefono: '',
+      region: '',
       comuna: '',
       edad: '',
       tratamientos: [],
@@ -263,24 +254,12 @@ const Register = () => {
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      <MapPin className="h-4 w-4 inline mr-2" />
-                      Comuna *
-                    </label>
-                    <select
-                      name="comuna"
-                      value={formData.comuna}
-                      onChange={handleInputChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent"
-                      required
-                    >
-                      <option value="">Selecciona tu comuna</option>
-                      {comunas.map(comuna => (
-                        <option key={comuna} value={comuna}>{comuna}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <RegionComunaSelector
+                    regionValue={formData.region}
+                    comunaValue={formData.comuna}
+                    onRegionChange={(region) => setFormData(prev => ({ ...prev, region }))}
+                    onComunaChange={(comuna) => setFormData(prev => ({ ...prev, comuna }))}
+                  />
                 </div>
 
                 {/* Campos específicos para pacientes */}
@@ -308,7 +287,7 @@ const Register = () => {
                         Tratamientos de Interés
                       </label>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {tratamientos.map(tratamiento => (
+                        {TRATAMIENTOS.map(tratamiento => (
                           <label key={tratamiento} className="flex items-center space-x-2 cursor-pointer">
                             <input
                               type="checkbox"
@@ -340,7 +319,7 @@ const Register = () => {
                         required
                       >
                         <option value="">Selecciona tu universidad</option>
-                        {universidades.map(uni => (
+                        {UNIVERSIDADES.map(uni => (
                           <option key={uni} value={uni}>{uni}</option>
                         ))}
                       </select>
@@ -373,7 +352,7 @@ const Register = () => {
                         required
                       >
                         <option value="">Selecciona tu etapa</option>
-                        {etapas.map(etapa => (
+                        {ETAPAS_FORMACION.map(etapa => (
                           <option key={etapa} value={etapa}>{etapa}</option>
                         ))}
                       </select>

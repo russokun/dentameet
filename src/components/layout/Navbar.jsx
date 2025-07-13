@@ -10,9 +10,8 @@ const Navbar = () => {
 
   const navItems = [
     { name: 'Inicio', path: '/' },
-    { name: 'Registro', path: '/registro' },
-    { name: 'Contacto', path: '/contacto' },
     { name: 'Nosotros', path: '/nosotros' },
+    { name: 'Contacto', path: '/contacto' },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -49,7 +48,7 @@ const Navbar = () => {
               </Link>
             ))}
             <Link
-              to="/registro"
+              to="/auth"
               className="btn-primary text-sm px-6 py-2"
             >
               Únete Ahora
@@ -91,7 +90,7 @@ const Navbar = () => {
                 </Link>
               ))}
               <Link
-                to="/registro"
+                to="/auth"
                 onClick={() => setIsOpen(false)}
                 className="block w-full text-center btn-primary mt-4"
               >
