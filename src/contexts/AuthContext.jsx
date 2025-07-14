@@ -63,29 +63,90 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
+  // Función utilitaria para crear perfil manualmente
+  const createProfileIfNeeded = async (userId, email, role = 'paciente') => {
+    try {
+      console.log('Checking if profile exists for user:', userId)
+      
+      const { data: existingProfile } = await supabase
+        .from('person')
+        .select('id')
+        .eq('id', userId)
+        .maybeSingle()
+
+      if (!existingProfile) {
+        console.log('Creating missing profile...')
+        const { data, error } = await supabase
+          .from('person')
+          .insert({
+            id: userId,
+            email: email,
+            role: role
+          })
+          .select()
+          .maybeSingle()
+
+        if (error) {
+          console.error('Error creating profile:', error)
+          throw error
+        }
+        
+        console.log('Profile created:', data)
+        setProfile(data)
+        return data
+      } else {
+        console.log('Profile already exists')
+        return existingProfile
+      }
+    } catch (error) {
+      console.error('Error in createProfileIfNeeded:', error)
+      throw error
+    }
+  }
+
   const signUp = async (email, password, role = 'paciente') => {
     try {
       setLoading(true)
+      
       const { data, error } = await supabase.auth.signUp({
         email,
-        password,
-        options: {
-          data: {
-            role: role
-          }
-        }
+        password
       })
 
       if (error) throw error
 
+      // Crear el perfil manualmente tras registro exitoso
+      if (data.user && !error) {
+        try {
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          const { data: profileData, error: profileError } = await supabase
+            .from('person')
+            .insert({
+              id: data.user.id,
+              email: data.user.email,
+              role: role
+            })
+            .select()
+            .maybeSingle()
+            
+          if (profileError) {
+            console.log('Profile creation note:', profileError.message)
+          }
+        } catch (profileError) {
+          console.log('Profile creation handled:', profileError.message)
+        }
+      }
+
       toast({
         title: "¡Registro exitoso!",
-        description: "Por favor verifica tu email para continuar."
+        description: "Tu cuenta ha sido creada correctamente."
       })
 
       return { data, error: null }
     } catch (error) {
       console.error('Error during sign up:', error)
+      
       toast({
         title: "Error de registro",
         description: error.message,
@@ -160,58 +221,43 @@ export const AuthProvider = ({ children }) => {
       
       if (!user) throw new Error('No user logged in')
 
-      console.log('Updating profile for user:', user.id)
-      console.log('Profile data:', profileData)
-
-      // Primero verificar si el perfil ya existe
-      const { data: existingProfile, error: checkError } = await supabase
+      // Verificar si el perfil ya existe
+      const { data: existingProfile } = await supabase
         .from('person')
         .select('id')
         .eq('id', user.id)
         .maybeSingle()
 
-      if (checkError) {
-        console.error('Error checking existing profile:', checkError)
-        throw checkError
-      }
-
-      console.log('Existing profile:', existingProfile)
-
       let data, error
 
       if (existingProfile) {
-        console.log('Updating existing profile...')
-        // Si existe, actualizar
+        // Actualizar perfil existente
         const result = await supabase
           .from('person')
           .update(profileData)
           .eq('id', user.id)
           .select()
-          .single()
+          .maybeSingle()
         data = result.data
         error = result.error
       } else {
-        console.log('Creating new profile...')
-        // Si no existe, insertar
+        // Crear nuevo perfil
         const result = await supabase
           .from('person')
           .insert({
             id: user.id,
-            email: user.email,
+            email: user.email || user.user_metadata?.email,
+            role: user.user_metadata?.role || 'paciente',
             ...profileData
           })
           .select()
-          .single()
+          .maybeSingle()
         data = result.data
         error = result.error
       }
 
-      if (error) {
-        console.error('Database operation error:', error)
-        throw error
-      }
+      if (error) throw error
 
-      console.log('Profile operation successful:', data)
       setProfile(data)
       
       toast({
@@ -241,6 +287,7 @@ export const AuthProvider = ({ children }) => {
     signIn,
     signOut,
     updateProfile,
+    createProfileIfNeeded,
     refreshProfile: () => user && loadUserProfile(user.id)
   }
 
