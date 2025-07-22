@@ -1,21 +1,52 @@
 import { supabase } from '@/lib/supabaseClient'
 
-// Servicio para el sistema de matches tipo Tinder
+// Servicio premium para el sistema de matches
 export class MatchService {
-  static async getPotentialMatches(userId, userRole) {
+  // Obtener perfiles compatibles con sistema de scoring avanzado
+  static async getPotentialMatches(userId, userRole, limit = 10) {
     try {
-      let query = supabase.from('person').select('*')
+      // Obtener IDs de usuarios ya interactuados
+      const { data: interactions } = await supabase
+        .from('matches')
+        .select('target_user_id')
+        .eq('user_id', userId)
 
-      // Lógica de matching según el rol
+      const excludedIds = interactions?.map(i => i.target_user_id) || []
+      excludedIds.push(userId) // Excluir al usuario actual
+
+      // Determinar roles compatibles
+      let targetRoles = []
       if (userRole === 'paciente') {
-        // Los pacientes ven estudiantes y dentameeters
-        query = query.in('role', ['estudiante', 'dentameeter'])
+        targetRoles = ['estudiante', 'dentameeter']
       } else if (userRole === 'estudiante') {
-        // Los estudiantes ven pacientes y dentameeters
-        query = query.in('role', ['paciente', 'dentameeter'])
+        targetRoles = ['paciente', 'dentameeter']
       } else if (userRole === 'dentameeter') {
-        // Los dentameeter ven todos
-        query = query.in('role', ['paciente', 'estudiante', 'dentameeter'])
+        targetRoles = ['paciente', 'estudiante']
+      }
+
+      // Query mejorado con exclusiones
+      let query = supabase
+        .from('person')
+        .select(`
+          id,
+          nombre,
+          apellido,
+          role,
+          edad,
+          region,
+          comuna,
+          universidad,
+          etapa_formacion,
+          especialidades,
+          tratamientos_interes,
+          descripcion
+        `)
+        .in('role', targetRoles)
+        .limit(limit)
+
+      // Excluir usuarios ya interactuados
+      if (excludedIds.length > 0) {
+        query = query.not('id', 'in', `(${excludedIds.join(',')})`)
       }
 
       // Excluir el usuario actual y usuarios ya matcheados
