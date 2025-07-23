@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Helmet } from 'react-helmet'
 import { Heart, Users, Sparkles, RefreshCw } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { MatchService } from '@/services/MatchService'
+import { StatsService } from '@/services/StatsService'
 import MatchCard from '@/components/matches/MatchCard'
 import MatchModal from '@/components/matches/MatchModal'
 import { Button } from '@/components/ui/button'
@@ -11,6 +13,7 @@ import { toast } from '@/components/ui/use-toast'
 
 const Matches = () => {
   const { user, profile, loading: authLoading } = useAuth()
+  const navigate = useNavigate()
   const [profiles, setProfiles] = useState([])
   const [currentIndex, setCurrentIndex] = useState(0)
   const [profilesLoading, setProfilesLoading] = useState(false)
@@ -18,12 +21,34 @@ const Matches = () => {
   const [matchedProfile, setMatchedProfile] = useState(null)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [loadingAttempted, setLoadingAttempted] = useState(false)
+  const isMountedRef = useRef(true)
 
   // Cargar perfiles compatibles
   const loadProfiles = async (showLoader = true) => {
-    if (!user?.id || !profile?.role) return
-    if (profilesLoading || isRefreshing) return
-    if (loadingAttempted && profiles.length > 0) return // Ya se cargó exitosamente
+    // Verificar si el componente sigue montado
+    if (!isMountedRef.current) {
+      console.log('Component unmounted, skipping load')
+      return
+    }
+    
+    // Múltiples guards para evitar ejecuciones duplicadas
+    if (!user?.id || !profile?.role) {
+      console.log('Missing user or profile data')
+      return
+    }
+    if (profilesLoading || isRefreshing) {
+      console.log('Already loading profiles')
+      return
+    }
+    if (loadingAttempted && profiles.length > 0) {
+      console.log('Already loaded profiles successfully')
+      return
+    }
+    
+    console.log('Starting to load profiles...')
+    
+    // Debug: verificar usuarios por rol
+    await StatsService.debugUsersByRole()
     
     try {
       if (showLoader) setProfilesLoading(true)
@@ -36,28 +61,74 @@ const Matches = () => {
         15
       )
       
-      setProfiles(compatibleProfiles)
+      // Verificar nuevamente si el componente sigue montado antes de actualizar estado
+      if (!isMountedRef.current) {
+        console.log('Component unmounted during load, skipping state update')
+        return
+      }
+      
+      console.log('Loaded profiles:', compatibleProfiles?.length || 0)
+      setProfiles(compatibleProfiles || [])
       setCurrentIndex(0)
     } catch (error) {
       console.error('Error loading profiles:', error)
-      setLoadingAttempted(false) // Permitir reintentar en caso de error
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar los perfiles. Intenta nuevamente.",
-        variant: "destructive"
-      })
+      if (isMountedRef.current) {
+        setLoadingAttempted(false) // Permitir reintentar en caso de error
+        toast({
+          title: "Error",
+          description: "No se pudieron cargar los perfiles. Intenta nuevamente.",
+          variant: "destructive"
+        })
+      }
     } finally {
-      setProfilesLoading(false)
-      setIsRefreshing(false)
+      if (isMountedRef.current) {
+        setProfilesLoading(false)
+        setIsRefreshing(false)
+        console.log('Finished loading profiles')
+      }
     }
   }
 
   useEffect(() => {
-    // Solo cargar cuando tengamos user y profile válidos y no hayamos intentado cargar
-    if (user?.id && profile?.role && !loadingAttempted) {
-      loadProfiles()
+    // Solo cargar una vez cuando tengamos los datos necesarios
+    if (user?.id && profile?.role && !loadingAttempted && !profilesLoading && isMountedRef.current) {
+      console.log('Loading profiles for user:', user.id, 'role:', profile.role)
+      // Delay pequeño para asegurar que el componente esté completamente montado
+      const timeoutId = setTimeout(() => {
+        if (isMountedRef.current) {
+          loadProfiles()
+        }
+      }, 100)
+      
+      return () => clearTimeout(timeoutId)
     }
-  }, [user?.id, profile?.role, loadingAttempted])
+  }, [user?.id, profile?.role])
+  
+  // useEffect separado para debug y timeout de seguridad
+  useEffect(() => {
+    if (profilesLoading && isMountedRef.current) {
+      const timeoutId = setTimeout(() => {
+        if (isMountedRef.current) {
+          console.warn('Loading timeout - forcing completion')
+          setProfilesLoading(false)
+          setLoadingAttempted(true)
+        }
+      }, 8000) // 8 segundos máximo
+      
+      return () => clearTimeout(timeoutId)
+    }
+  }, [profilesLoading])
+
+  // Cleanup cuando el componente se desmonta
+  useEffect(() => {
+    isMountedRef.current = true // Asegurar que esté en true al montar
+    console.log('Matches component mounted')
+    
+    return () => {
+      console.log('Matches component unmounting - cleaning up')
+      isMountedRef.current = false
+    }
+  }, [])
 
   // Manejar like
   const handleLike = async (likedProfile) => {
@@ -146,7 +217,7 @@ const Matches = () => {
         <motion.div className="text-center">
           <h2 className="text-xl font-semibold text-gray-700">Acceso requerido</h2>
           <p className="text-gray-500 mt-2">Por favor inicia sesión para ver matches</p>
-          <Button onClick={() => window.location.href = '/auth/login'} className="mt-4">
+          <Button onClick={() => navigate('/auth')} className="mt-4">
             Iniciar Sesión
           </Button>
         </motion.div>
@@ -168,14 +239,15 @@ const Matches = () => {
           <h2 className="text-xl font-semibold text-gray-700">Buscando matches perfectos...</h2>
           <p className="text-gray-500 mt-2">Esto puede tomar unos segundos</p>
           
-          {/* Botón de emergencia después de 3 segundos */}
+          {/* Botón de emergencia después de 2 segundos */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 3 }}
+            transition={{ delay: 2 }}
           >
             <Button
               onClick={() => {
+                console.log('Emergency button clicked - forcing completion')
                 setProfilesLoading(false)
                 setLoadingAttempted(true)
                 toast({
@@ -269,7 +341,7 @@ const Matches = () => {
                 
                 <Button
                   variant="outline"
-                  onClick={() => window.location.href = '/my-matches'}
+                  onClick={() => navigate('/my-matches')}
                   className="w-full py-3 rounded-xl"
                 >
                   Ver mis matches

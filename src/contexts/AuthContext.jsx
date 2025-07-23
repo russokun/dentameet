@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react'
 import { supabase, getCurrentUser, getUserProfile } from '@/lib/supabaseClient'
 import { toast } from '@/components/ui/use-toast'
 
@@ -16,50 +16,82 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
 
   useEffect(() => {
+    let isMounted = true
+
     // Obtener sesión inicial
     const getInitialSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user) {
+        if (session?.user && isMounted) {
           setUser(session.user)
           await loadUserProfile(session.user.id)
         }
       } catch (error) {
         console.error('Error getting initial session:', error)
       } finally {
-        setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
     getInitialSession()
 
-    // Escuchar cambios de autenticación
+    // Escuchar cambios de autenticación con estabilización
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (session?.user) {
+        if (!isMounted) return
+        
+        console.log('Auth state change:', event, session?.user?.id)
+        
+        // Solo procesar cambios relevantes
+        if (event === 'SIGNED_IN' && session?.user) {
           setUser(session.user)
           await loadUserProfile(session.user.id)
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           setUser(null)
           setProfile(null)
+        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
+          // Solo actualizar si el usuario cambió
+          setUser(prevUser => {
+            if (prevUser?.id !== session.user.id) {
+              loadUserProfile(session.user.id)
+              return session.user
+            }
+            return prevUser
+          })
         }
-        setLoading(false)
+        
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     )
 
-    return () => subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   const loadUserProfile = async (userId) => {
+    if (profileLoading) return // Evitar cargas concurrentes
+    
     try {
+      setProfileLoading(true)
+      console.log('Loading profile for user:', userId)
       const userProfile = await getUserProfile(userId)
       setProfile(userProfile)
+      console.log('Profile loaded:', userProfile?.id ? 'Success' : 'No profile found')
     } catch (error) {
       console.error('Error loading user profile:', error)
       // Si no existe perfil, es normal para usuarios nuevos
       setProfile(null)
+    } finally {
+      setProfileLoading(false)
     }
   }
 
@@ -279,7 +311,8 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  const value = {
+  // Memorizar el valor del contexto para evitar re-renders innecesarios
+  const value = useMemo(() => ({
     user,
     profile,
     loading,
@@ -289,7 +322,7 @@ export const AuthProvider = ({ children }) => {
     updateProfile,
     createProfileIfNeeded,
     refreshProfile: () => user && loadUserProfile(user.id)
-  }
+  }), [user, profile, loading])
 
   return (
     <AuthContext.Provider value={value}>

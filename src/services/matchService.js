@@ -5,16 +5,25 @@ export class MatchService {
   // Obtener perfiles compatibles con sistema de scoring avanzado
   static async getPotentialMatches(userId, userRole, limit = 10) {
     try {
-      // Obtener IDs de usuarios ya interactuados
-      const { data: interactions } = await supabase
+      // Obtener todos los matches existentes donde el usuario participa
+      const { data: existingMatches } = await supabase
         .from('matches')
-        .select('target_user_id')
-        .eq('user_id', userId)
+        .select('user1_id, user2_id')
+        .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
 
-      const excludedIds = interactions?.map(i => i.target_user_id) || []
-      excludedIds.push(userId) // Excluir al usuario actual
+      // Crear lista de IDs excluidos
+      const excludedIds = new Set([userId])
+      if (existingMatches) {
+        existingMatches.forEach(match => {
+          if (match.user1_id === userId) {
+            excludedIds.add(match.user2_id)
+          } else {
+            excludedIds.add(match.user1_id)
+          }
+        })
+      }
 
-      // Determinar roles compatibles
+      // Determinar roles compatibles - TODOS los roles pueden ver a TODOS
       let targetRoles = []
       if (userRole === 'paciente') {
         targetRoles = ['estudiante', 'dentameeter']
@@ -24,7 +33,9 @@ export class MatchService {
         targetRoles = ['paciente', 'estudiante']
       }
 
-      // Query mejorado con exclusiones
+      console.log(`Usuario ${userRole} puede ver roles:`, targetRoles)
+
+      // Query simplificado y más robusto
       let query = supabase
         .from('person')
         .select(`
@@ -39,31 +50,27 @@ export class MatchService {
           etapa_formacion,
           especialidades,
           tratamientos_interes,
-          descripcion
+          descripcion,
+          telefono
         `)
         .in('role', targetRoles)
         .limit(limit)
 
       // Excluir usuarios ya interactuados
-      if (excludedIds.length > 0) {
-        query = query.not('id', 'in', `(${excludedIds.join(',')})`)
+      if (excludedIds.size > 0) {
+        const excludedArray = Array.from(excludedIds)
+        console.log('Excluyendo IDs:', excludedArray)
+        query = query.not('id', 'in', `(${excludedArray.map(id => `'${id}'`).join(',')})`)
       }
 
-      // Excluir el usuario actual y usuarios ya matcheados
-      query = query
-        .neq('id', userId)
-        .not('id', 'in', `(
-          SELECT CASE 
-            WHEN user1_id = '${userId}' THEN user2_id 
-            ELSE user1_id 
-          END 
-          FROM matches 
-          WHERE user1_id = '${userId}' OR user2_id = '${userId}'
-        )`)
+      const { data, error } = await query
 
-      const { data, error } = await query.limit(10)
+      if (error) {
+        console.error('Error en consulta:', error)
+        throw error
+      }
 
-      if (error) throw error
+      console.log(`Encontrados ${data?.length || 0} perfiles compatibles para ${userRole}`)
       return data || []
     } catch (error) {
       console.error('Error fetching potential matches:', error)
@@ -90,6 +97,7 @@ export class MatchService {
           user1_id: user1Id,
           user2_id: user2Id,
           user1_liked: isLike,
+          user2_liked: false, // Se actualizará si hay reciprocidad
           is_mutual: existingMatch && existingMatch.user1_liked && isLike,
           created_at: new Date().toISOString()
         })
@@ -102,7 +110,7 @@ export class MatchService {
       if (existingMatch && existingMatch.user1_liked && isLike) {
         await supabase
           .from('matches')
-          .update({ is_mutual: true })
+          .update({ is_mutual: true, user2_liked: true })
           .eq('id', existingMatch.id)
       }
 
@@ -112,6 +120,22 @@ export class MatchService {
       }
     } catch (error) {
       console.error('Error creating match:', error)
+      throw error
+    }
+  }
+
+  // Método para registrar acciones (like/pass) - compatible con Matches.jsx
+  static async recordAction(userId, targetUserId, action) {
+    try {
+      const isLike = action === 'liked'
+      const result = await this.createMatch(userId, targetUserId, isLike)
+      
+      return {
+        isMatch: result.isMutual,
+        match: result.match
+      }
+    } catch (error) {
+      console.error('Error recording action:', error)
       throw error
     }
   }

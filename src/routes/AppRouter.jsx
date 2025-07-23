@@ -1,5 +1,5 @@
 import React from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -18,12 +18,16 @@ import Dashboard from '@/pages/Dashboard'
 import ProfileSetup from '@/pages/profile/ProfileSetup'
 import Profile from '@/pages/profile/Profile'
 import Matches from '@/pages/Matches'
+import MyMatches from '@/pages/MyMatches'
 import Appointments from '@/pages/Appointments'
 import Feedback from '@/pages/Feedback'
 
 // Route protection component
 const ProtectedRoute = ({ children }) => {
   const { user, loading } = useAuth()
+  const location = useLocation()
+  
+  console.log('ProtectedRoute check:', { path: location.pathname, user: user?.id, loading })
   
   if (loading) return <LoadingSpinner />
   
@@ -33,6 +37,9 @@ const ProtectedRoute = ({ children }) => {
 // Redirect authenticated users away from auth pages
 const PublicRoute = ({ children }) => {
   const { user, loading } = useAuth()
+  const location = useLocation()
+  
+  console.log('PublicRoute check:', { path: location.pathname, user: user?.id, loading })
   
   if (loading) return <LoadingSpinner />
   
@@ -42,11 +49,26 @@ const PublicRoute = ({ children }) => {
 // Check if user needs to complete profile setup
 const ProfileCheck = ({ children }) => {
   const { profile, user, loading } = useAuth()
+  const location = useLocation()
+  
+  console.log('ProfileCheck:', { 
+    path: location.pathname, 
+    user: user?.id, 
+    hasProfile: !!profile, 
+    loading,
+    profileData: profile ? { name: profile.nombre, role: profile.role } : null
+  })
   
   if (loading) return <LoadingSpinner />
   
+  // Si ya estamos en profile setup, no redirigir
+  if (location.pathname === '/profile/setup') {
+    return children
+  }
+  
   // If user exists but no profile, redirect to setup
   if (user && !profile) {
+    console.log('Redirecting to profile setup - user exists but no profile')
     return <Navigate to="/profile/setup" replace />
   }
   
@@ -122,6 +144,16 @@ const AppRouter = () => {
           <ProfileCheck>
             <PrivateLayout>
               <Matches />
+            </PrivateLayout>
+          </ProfileCheck>
+        </ProtectedRoute>
+      } />
+      
+      <Route path="/my-matches" element={
+        <ProtectedRoute>
+          <ProfileCheck>
+            <PrivateLayout>
+              <MyMatches />
             </PrivateLayout>
           </ProfileCheck>
         </ProtectedRoute>
