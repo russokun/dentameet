@@ -72,13 +72,13 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Correo Electrónico',
-      content: 'info@dentameet.net',
+      content: 'dentameet.devs@gmail.com',
       description: 'Escríbenos para cualquier consulta'
     },
     {
       icon: Phone,
       title: 'Teléfono',
-      content: '+56 9 1234 5678',
+      content: '+56 9 57384302',
       description: 'Lunes a Viernes, 9:00 - 18:00'
     },
     {
