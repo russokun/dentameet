@@ -78,11 +78,11 @@ const Home = () => {
                 a bajo costo, mientras apoya la formación clínica de futuros odontólogos.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/registro" className="btn-secondary text-lg px-8 py-4 inline-flex items-center justify-center">
+                <Link to="/auth" className="btn-secondary text-lg px-8 py-4 inline-flex items-center justify-center">
                   Registrarse Ahora
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
-                <Link to="/nosotros" className="glass-effect text-white border border-white/30 px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-center">
+                <Link to="/about" className="glass-effect text-white border border-white/30 px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-center">
                   Conocer Más
                 </Link>
               </div>
@@ -220,11 +220,11 @@ const Home = () => {
               Únete a nuestra comunidad y forma parte del cambio hacia una salud bucal más accesible
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/registro" className="btn-secondary text-lg px-8 py-4 inline-flex items-center justify-center">
+              <Link to="/auth" className="btn-secondary text-lg px-8 py-4 inline-flex items-center justify-center">
                 Registrarse Como Paciente
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
-              <Link to="/registro" className="glass-effect text-white border border-white/30 px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all duration-300">
+              <Link to="/auth" className="glass-effect text-white border border-white/30 px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all duration-300">
                 Registrarse Como Estudiante
               </Link>
             </div>
