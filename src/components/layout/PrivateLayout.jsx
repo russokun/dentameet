@@ -31,8 +31,13 @@ const PrivateLayout = ({ children }) => {
   ]
 
   const handleSignOut = async () => {
-    await signOut()
-    navigate('/')
+    console.log('HandleSignOut iniciado...')
+    try {
+      await signOut()
+      console.log('SignOut completado desde handleSignOut')
+    } catch (error) {
+      console.error('Error en handleSignOut:', error)
+    }
   }
 
   const isActive = (path) => location.pathname === path

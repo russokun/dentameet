@@ -82,7 +82,7 @@ const Home = () => {
                   Registrarse Ahora
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
-                <Link to="/nosotros" className="glass-effect text-white border border-white/30 px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-center">
+                <Link to="/about" className="glass-effect text-white border border-white/30 px-8 py-4 rounded-lg font-semibold hover:bg-white/20 transition-all duration-300 text-center">
                   Conocer Más
                 </Link>
               </div>

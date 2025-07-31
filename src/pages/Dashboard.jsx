@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { Helmet } from 'react-helmet'
 import { 
@@ -13,13 +13,67 @@ import {
   Shield,
   Loader
 } from 'lucide-react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useAuth } from '../contexts/AuthContext'
+import { supabase } from '../lib/supabaseClient'
 
 const Dashboard = () => {
   const { profile, user, loading: authLoading } = useAuth()
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  // SOLO loading para auth
-  if (authLoading) {
+  // Cargar estadísticas reales desde Supabase
+  useEffect(() => {
+    const loadDashboardStats = async () => {
+      if (!user) {
+        setLoading(false)
+        return
+      }
+
+      try {
+        // Obtener datos de usuarios para stats generales
+        const { data: usersData, error: usersError } = await supabase
+          .from('person')
+          .select('*')
+        
+        if (usersError) throw usersError
+
+        // Calcular estadísticas reales - solo estudiantes y pacientes
+        const totalUsers = usersData?.length || 0
+        const estudiantes = usersData?.filter(p => p.role === 'estudiante').length || 0
+        const pacientes = usersData?.filter(p => p.role === 'paciente').length || 0
+        const dentameaters = usersData?.filter(p => p.role === 'dentameeter').length || 0
+        
+        // Calcular completeness del perfil actual
+        const profileFields = ['nombre', 'apellido', 'telefono', 'ciudad', 'bio', 'especialidad', 'universidad']
+        const completedFields = profileFields.filter(field => profile?.[field]).length
+        const profileCompleteness = Math.round((completedFields / profileFields.length) * 100)
+
+        setStats({
+          totalUsers,
+          estudiantes,
+          pacientes,
+          dentameaters,
+          matchesActivos: 0, // Por ahora 0 hasta implementar matches
+          citasProgramadas: 0, // Por ahora 0 hasta implementar citas
+          profileCompleteness,
+          feedbackRecibido: { count: 0, average: 0 }, // Por ahora 0
+          progresoDelMes: { percentage: profileCompleteness, change: 5 }
+        })
+        
+      } catch (error) {
+        console.error('❌ Error loading dashboard stats:', error)
+        setError(error.message)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboardStats()
+  }, [user, profile])
+
+  // Loading state
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <motion.div
@@ -28,58 +82,76 @@ const Dashboard = () => {
           animate={{ opacity: 1 }}
         >
           <Loader className="h-8 w-8 text-[#00C853] animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Verificando sesión...</p>
+          <p className="text-gray-600">Cargando dashboard...</p>
         </motion.div>
       </div>
     )
   }
 
-  // Stats fijos que SIEMPRE funcionan
-  const displayStats = {
+  // Error state
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 mb-4">Error al cargar el dashboard: {error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // Stats por defecto si no hay datos
+  const displayStats = stats || {
+    totalUsers: 0,
+    estudiantes: 0,
+    pacientes: 0,
+    dentameaters: 0,
     matchesActivos: 0,
     citasProgramadas: 0,
+    profileCompleteness: 0,
     feedbackRecibido: { count: 0, average: 0 },
     progresoDelMes: { percentage: 0, change: 0 }
   }
 
-  // Actividad fija que siempre funciona
   const recentActivity = []
-  
-  // Completeness fijo
-  const profileCompleteness = 75
 
   const statsData = [
     {
-      name: 'Matches Activos',
-      value: displayStats.matchesActivos.toString(),
+      name: 'Usuarios Totales',
+      value: displayStats.totalUsers.toString(),
       icon: Users,
       color: 'text-blue-600',
       bgColor: 'bg-blue-100',
+      change: `${displayStats.estudiantes} estudiantes, ${displayStats.pacientes} pacientes`
+    },
+    {
+      name: 'Completitud del Perfil',
+      value: `${displayStats.profileCompleteness}%`,
+      icon: Shield,
+      color: 'text-green-600',
+      bgColor: 'bg-green-100',
+      change: displayStats.profileCompleteness === 100 ? 'Perfil completo!' : 'Completa tu perfil para más matches'
+    },
+    {
+      name: 'Matches Activos',
+      value: displayStats.matchesActivos.toString(),
+      icon: Heart,
+      color: 'text-red-600',
+      bgColor: 'bg-red-100',
       change: displayStats.matchesActivos > 0 ? '+2 esta semana' : 'Busca tu primer match'
     },
     {
-      name: 'Ver Matches',
+      name: 'Citas Programadas',
       value: displayStats.citasProgramadas.toString(),
       icon: Calendar,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-      change: displayStats.citasProgramadas > 0 ? 'Próxima: Mañana' : 'No hay citas programadas'
-    },
-    {
-      name: 'Feedback Recibido',
-      value: displayStats.feedbackRecibido.count.toString(),
-      icon: MessageSquare,
       color: 'text-purple-600',
       bgColor: 'bg-purple-100',
-      change: displayStats.feedbackRecibido.count > 0 ? `${displayStats.feedbackRecibido.average}/5 promedio` : 'Sin feedback aún'
-    },
-    {
-      name: 'Progreso del Mes',
-      value: `${displayStats.progresoDelMes.percentage}%`,
-      icon: TrendingUp,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-100',
-      change: displayStats.progresoDelMes.change !== 0 ? `${displayStats.progresoDelMes.change > 0 ? '+' : ''}${displayStats.progresoDelMes.change}% vs mes anterior` : 'Primer mes de actividad'
+      change: displayStats.citasProgramadas > 0 ? 'Próxima: Pronto' : 'No hay citas programadas'
     }
   ]
 
@@ -295,17 +367,17 @@ const Dashboard = () => {
             >
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-bold text-gray-900">Completar Perfil</h2>
-                <span className="text-sm text-gray-500">{profileCompleteness}% completado</span>
+                <span className="text-sm text-gray-500">{displayStats.profileCompleteness}% completado</span>
               </div>
               <div className="bg-gray-200 rounded-full h-2">
-                <div className="bg-gradient-to-r from-[#1A237E] to-[#00C853] h-2 rounded-full" style={{ width: `${profileCompleteness}%` }}></div>
+                <div className="bg-gradient-to-r from-[#1A237E] to-[#00C853] h-2 rounded-full" style={{ width: `${displayStats.profileCompleteness}%` }}></div>
               </div>
               <p className="text-sm text-gray-600 mt-3">
-                {profileCompleteness >= 85 
+                {displayStats.profileCompleteness >= 85 
                   ? '¡Perfil excelente! Seguí así.' 
                   : 'Completa tu perfil para más matches.'}
               </p>
-              {profileCompleteness < 85 && (
+              {displayStats.profileCompleteness < 85 && (
                 <motion.a
                   href="/profile"
                   className="inline-block mt-3 text-sm text-[#00C853] hover:text-[#00B04F] font-medium"

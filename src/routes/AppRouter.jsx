@@ -1,187 +1,164 @@
 import React from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from '../contexts/AuthContext'
 
-// Layout components
-import PublicLayout from '@/components/layout/PublicLayout'
-import PrivateLayout from '@/components/layout/PrivateLayout'
+// Components
+import Navbar from '../components/layout/Navbar'
+import Footer from '../components/layout/Footer'
+import { Toaster } from '../components/ui/toaster'
 
-// Public pages
-import Home from '@/pages/Home'
-import About from '@/pages/static/About'
-import Contact from '@/pages/static/Contact'
-import AuthPage from '@/pages/auth/AuthPage'
+// Pages
+import Home from '../pages/static/Home'
+import About from '../pages/static/About'
+import Contact from '../pages/static/Contact'
+import AuthPage from '../pages/auth/AuthPage'
+import ProfileSetup from '../pages/profile/ProfileSetup'
+import Dashboard from '../pages/Dashboard'
+import Matches from '../pages/Matches'
+import Appointments from '../pages/Appointments'
+import Feedback from '../pages/Feedback'
+import Profile from '../pages/Profile'
 
-// Protected pages
-import Dashboard from '@/pages/Dashboard'
-import ProfileSetup from '@/pages/profile/ProfileSetup'
-import Profile from '@/pages/profile/Profile'
-import Matches from '@/pages/Matches'
-import MyMatches from '@/pages/MyMatches'
-import Appointments from '@/pages/Appointments'
-import Feedback from '@/pages/Feedback'
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+  </div>
+)
 
 // Route protection component
 const ProtectedRoute = ({ children }) => {
-  const { user, loading } = useAuth()
-  const location = useLocation()
+  const { user, profile, loading } = useAuth()
   
-  console.log('ProtectedRoute check:', { path: location.pathname, user: user?.id, loading })
+  console.log('🔐 ProtectedRoute check:', { 
+    path: window.location.pathname, 
+    user: user?.id, 
+    hasProfile: !!profile, 
+    loading 
+  })
+  
+  if (loading) return <LoadingSpinner />
+  
+  // No hay usuario -> redirect a auth
+  if (!user) {
+    return <Navigate to="/auth" replace />
+  }
+  
+  // Hay usuario pero no perfil -> redirect a profile setup
+  if (!profile) {
+    return <Navigate to="/profile/setup" replace />
+  }
+  
+  // Todo OK -> mostrar contenido
+  return children
+}
+
+// Redirect authenticated users away from auth pages
+const PublicRoute = ({ children }) => {
+  const { user, profile, loading } = useAuth()
+  
+  console.log('🌐 PublicRoute check:', { 
+    path: window.location.pathname, 
+    user: user?.id, 
+    hasProfile: !!profile, 
+    loading 
+  })
+  
+  if (loading) return <LoadingSpinner />
+  
+  // Si hay usuario logueado, redirigir según tenga perfil o no
+  if (user) {
+    if (profile) {
+      // Usuario completo -> dashboard
+      console.log('🚀 Usuario completo, redirigiendo a dashboard')
+      return <Navigate to="/dashboard" replace />
+    } else {
+      // Usuario sin perfil -> profile setup
+      console.log('📝 Usuario sin perfil, redirigiendo a profile setup')
+      return <Navigate to="/profile/setup" replace />
+    }
+  }
+  
+  // No hay usuario -> mostrar contenido público
+  return children
+}
+
+// Simple auth check for profile setup
+const RequireAuth = ({ children }) => {
+  const { user, loading } = useAuth()
   
   if (loading) return <LoadingSpinner />
   
   return user ? children : <Navigate to="/auth" replace />
 }
 
-// Redirect authenticated users away from auth pages
-const PublicRoute = ({ children }) => {
-  const { user, loading } = useAuth()
-  const location = useLocation()
-  
-  console.log('PublicRoute check:', { path: location.pathname, user: user?.id, loading })
-  
-  if (loading) return <LoadingSpinner />
-  
-  return !user ? children : <Navigate to="/dashboard" replace />
-}
-
-// Check if user needs to complete profile setup
-const ProfileCheck = ({ children }) => {
-  const { profile, user, loading } = useAuth()
-  const location = useLocation()
-  
-  console.log('ProfileCheck:', { 
-    path: location.pathname, 
-    user: user?.id, 
-    hasProfile: !!profile, 
-    loading,
-    profileData: profile ? { name: profile.nombre, role: profile.role } : null
-  })
-  
-  if (loading) return <LoadingSpinner />
-  
-  // Si ya estamos en profile setup, no redirigir
-  if (location.pathname === '/profile/setup') {
-    return children
-  }
-  
-  // If user exists but no profile, redirect to setup
-  if (user && !profile) {
-    console.log('Redirecting to profile setup - user exists but no profile')
-    return <Navigate to="/profile/setup" replace />
-  }
-  
-  return children
-}
-
-const AppRouter = () => {
+function AppRouter() {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route path="/" element={
-        <PublicLayout>
-          <Home />
-        </PublicLayout>
-      } />
-      
-      <Route path="/nosotros" element={
-        <PublicLayout>
-          <About />
-        </PublicLayout>
-      } />
-      
-      <Route path="/contacto" element={
-        <PublicLayout>
-          <Contact />
-        </PublicLayout>
-      } />
-      
-      {/* Auth routes (only for non-authenticated users) */}
-      <Route path="/auth" element={
-        <PublicRoute>
-          <AuthPage />
-        </PublicRoute>
-      } />
-      
-      <Route path="/registro" element={
-        <PublicRoute>
-          <AuthPage />
-        </PublicRoute>
-      } />
-      
-      {/* Protected routes */}
-      <Route path="/profile/setup" element={
-        <ProtectedRoute>
-          <PrivateLayout>
-            <ProfileSetup />
-          </PrivateLayout>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <ProfileCheck>
-            <PrivateLayout>
-              <Dashboard />
-            </PrivateLayout>
-          </ProfileCheck>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/profile" element={
-        <ProtectedRoute>
-          <ProfileCheck>
-            <PrivateLayout>
-              <Profile />
-            </PrivateLayout>
-          </ProfileCheck>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/matches" element={
-        <ProtectedRoute>
-          <ProfileCheck>
-            <PrivateLayout>
-              <Matches />
-            </PrivateLayout>
-          </ProfileCheck>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/my-matches" element={
-        <ProtectedRoute>
-          <ProfileCheck>
-            <PrivateLayout>
-              <MyMatches />
-            </PrivateLayout>
-          </ProfileCheck>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/appointments" element={
-        <ProtectedRoute>
-          <ProfileCheck>
-            <PrivateLayout>
-              <Appointments />
-            </PrivateLayout>
-          </ProfileCheck>
-        </ProtectedRoute>
-      } />
-      
-      <Route path="/feedback" element={
-        <ProtectedRoute>
-          <ProfileCheck>
-            <PrivateLayout>
-              <Feedback />
-            </PrivateLayout>
-          </ProfileCheck>
-        </ProtectedRoute>
-      } />
-      
-      {/* Fallback route */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <AuthProvider>
+      <Router>
+        <div className="min-h-screen bg-gray-50">
+          <Navbar />
+          <Routes>
+            {/* PUBLIC ROUTES */}
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            
+            {/* AUTH ROUTES */}
+            <Route path="/auth" element={
+              <PublicRoute>
+                <AuthPage />
+              </PublicRoute>
+            } />
+            
+            {/* PROFILE SETUP - Semi-protected */}
+            <Route path="/profile/setup" element={
+              <RequireAuth>
+                <ProfileSetup />
+              </RequireAuth>
+            } />
+            
+            {/* PROTECTED ROUTES */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <main className="container mx-auto px-4 py-6">
+                  <Dashboard />
+                </main>
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/matches" element={
+              <ProtectedRoute>
+                <Matches />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/appointments" element={
+              <ProtectedRoute>
+                <Appointments />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/feedback" element={
+              <ProtectedRoute>
+                <Feedback />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
+            
+            {/* 404 Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+          <Footer />
+          <Toaster />
+        </div>
+      </Router>
+    </AuthProvider>
   )
 }
 

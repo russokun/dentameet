@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useEffect, useState, useMemo } from 'react'
-import { supabase, getCurrentUser, getUserProfile } from '@/lib/supabaseClient'
+import React, { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabaseClient'
 import { toast } from '@/components/ui/use-toast'
 
 const AuthContext = createContext({})
@@ -16,313 +16,299 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [profileLoading, setProfileLoading] = useState(false)
 
-  useEffect(() => {
-    let isMounted = true
-
-    // Obtener sesión inicial
-    const getInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession()
-        if (session?.user && isMounted) {
-          setUser(session.user)
-          await loadUserProfile(session.user.id)
-        }
-      } catch (error) {
-        console.error('Error getting initial session:', error)
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    getInitialSession()
-
-    // Escuchar cambios de autenticación con estabilización
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (!isMounted) return
-        
-        console.log('Auth state change:', event, session?.user?.id)
-        
-        // Solo procesar cambios relevantes
-        if (event === 'SIGNED_IN' && session?.user) {
-          setUser(session.user)
-          await loadUserProfile(session.user.id)
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null)
-          setProfile(null)
-        } else if (event === 'TOKEN_REFRESHED' && session?.user) {
-          // Solo actualizar si el usuario cambió
-          setUser(prevUser => {
-            if (prevUser?.id !== session.user.id) {
-              loadUserProfile(session.user.id)
-              return session.user
-            }
-            return prevUser
-          })
-        }
-        
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    )
-
-    return () => {
-      isMounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
-
+  // Cargar perfil real desde Supabase
   const loadUserProfile = async (userId) => {
-    if (profileLoading) return // Evitar cargas concurrentes
+    if (!userId) return null
     
     try {
-      setProfileLoading(true)
-      console.log('Loading profile for user:', userId)
-      const userProfile = await getUserProfile(userId)
-      setProfile(userProfile)
-      console.log('Profile loaded:', userProfile?.id ? 'Success' : 'No profile found')
-    } catch (error) {
-      console.error('Error loading user profile:', error)
-      // Si no existe perfil, es normal para usuarios nuevos
-      setProfile(null)
-    } finally {
-      setProfileLoading(false)
-    }
-  }
-
-  // Función utilitaria para crear perfil manualmente
-  const createProfileIfNeeded = async (userId, email, role = 'paciente') => {
-    try {
-      console.log('Checking if profile exists for user:', userId)
-      
-      const { data: existingProfile } = await supabase
+      console.log('🔄 Cargando perfil para usuario:', userId)
+      const { data, error } = await supabase
         .from('person')
-        .select('id')
+        .select('*')
         .eq('id', userId)
-        .maybeSingle()
-
-      if (!existingProfile) {
-        console.log('Creating missing profile...')
-        const { data, error } = await supabase
-          .from('person')
-          .insert({
-            id: userId,
-            email: email,
-            role: role
-          })
-          .select()
-          .maybeSingle()
-
-        if (error) {
-          console.error('Error creating profile:', error)
-          throw error
-        }
-        
-        console.log('Profile created:', data)
-        setProfile(data)
-        return data
-      } else {
-        console.log('Profile already exists')
-        return existingProfile
+        .single()
+      
+      if (error) {
+        console.error('❌ Error cargando perfil:', error)
+        console.error('❌ Error details:', { 
+          message: error.message, 
+          details: error.details, 
+          hint: error.hint,
+          code: error.code 
+        })
+        return null
       }
+      
+      if (!data) {
+        console.log('ℹ️ No se encontró perfil para usuario:', userId)
+        return null
+      }
+      
+      console.log('✅ Perfil cargado:', data?.nombre)
+      return data
     } catch (error) {
-      console.error('Error in createProfileIfNeeded:', error)
-      throw error
+      console.error('❌ Error en loadUserProfile:', error)
+      return null
     }
   }
 
-  const signUp = async (email, password, role = 'paciente') => {
+  // Función para refrescar perfil (útil después de editar)
+  const refreshProfile = async () => {
+    if (!user?.id) return
+    
+    const profileData = await loadUserProfile(user.id)
+    setProfile(profileData)
+    return profileData
+  }
+
+  // Función para hacer login
+  const signIn = async (email, password) => {
     try {
+      console.log('🔑 Intentando login con:', email)
+      setLoading(true)
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      })
+      
+      if (error) {
+        console.error('❌ Error en login:', error)
+        toast({
+          title: "Error al iniciar sesión",
+          description: error.message,
+          variant: "destructive"
+        })
+        throw error
+      }
+      
+      console.log('✅ Login exitoso:', data.user?.id)
+      toast({
+        title: "¡Bienvenido!",
+        description: "Has iniciado sesión correctamente",
+        variant: "default"
+      })
+      
+      return data
+    } catch (error) {
+      console.error('❌ Error en signIn:', error)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Función para hacer registro
+  const signUp = async (email, password, userData = {}) => {
+    try {
+      console.log('📝 Intentando registro con:', email)
       setLoading(true)
       
       const { data, error } = await supabase.auth.signUp({
         email,
         password
       })
-
-      if (error) throw error
-
-      // Crear el perfil manualmente tras registro exitoso
-      if (data.user && !error) {
+      
+      if (error) {
+        console.error('❌ Error en registro:', error)
+        toast({
+          title: "Error al registrarse",
+          description: error.message,
+          variant: "destructive"
+        })
+        throw error
+      }
+      
+      // Crear perfil básico si hay datos adicionales
+      if (data.user && userData.nombre) {
         try {
-          await new Promise(resolve => setTimeout(resolve, 500))
-          
-          const { data: profileData, error: profileError } = await supabase
+          const { error: profileError } = await supabase
             .from('person')
             .insert({
               id: data.user.id,
               email: data.user.email,
-              role: role
+              nombre: userData.nombre,
+              apellido: userData.apellido || '',
+              telefono: userData.telefono || '',
+              role: userData.role || 'paciente',
+              created_at: new Date().toISOString()
             })
-            .select()
-            .maybeSingle()
-            
+          
           if (profileError) {
-            console.log('Profile creation note:', profileError.message)
+            console.error('❌ Error creando perfil:', profileError)
+          } else {
+            console.log('✅ Perfil básico creado')
           }
         } catch (profileError) {
-          console.log('Profile creation handled:', profileError.message)
+          console.error('❌ Error en creación de perfil:', profileError)
         }
       }
-
+      
+      console.log('✅ Registro exitoso:', data.user?.id)
       toast({
         title: "¡Registro exitoso!",
-        description: "Tu cuenta ha sido creada correctamente."
+        description: "Cuenta creada correctamente. Completa tu perfil para continuar.",
+        variant: "default"
       })
-
-      return { data, error: null }
-    } catch (error) {
-      console.error('Error during sign up:', error)
       
-      toast({
-        title: "Error de registro",
-        description: error.message,
-        variant: "destructive"
-      })
-      return { data: null, error }
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const signIn = async (email, password) => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      })
-
-      if (error) throw error
-
-      toast({
-        title: "¡Bienvenido!",
-        description: "Has iniciado sesión correctamente."
-      })
-
-      return { data, error: null }
+      return data
     } catch (error) {
-      console.error('Error during sign in:', error)
-      toast({
-        title: "Error de inicio de sesión",
-        description: error.message,
-        variant: "destructive"
-      })
-      return { data: null, error }
+      console.error('❌ Error en signUp:', error)
+      throw error
     } finally {
       setLoading(false)
     }
   }
 
+  // Logout efectivo y limpio
   const signOut = async () => {
     try {
-      setLoading(true)
+      console.log('🔄 Iniciando logout...')
+      
+      // 1. Logout de Supabase
       const { error } = await supabase.auth.signOut()
-      if (error) throw error
-
+      if (error) {
+        console.error('❌ Error en Supabase logout:', error)
+      }
+      
+      // 2. Limpiar estado local SIEMPRE
       setUser(null)
       setProfile(null)
-
-      toast({
-        title: "Sesión cerrada",
-        description: "Has cerrado sesión correctamente."
-      })
-
-      return { error: null }
-    } catch (error) {
-      console.error('Error during sign out:', error)
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      })
-      return { error }
-    } finally {
       setLoading(false)
+      
+      console.log('✅ Logout completado, redirigiendo...')
+      
+      // 3. Redirección forzada
+      window.location.href = '/auth'
+      
+    } catch (error) {
+      console.error('❌ Error crítico en logout:', error)
+      // FORZAR LIMPIEZA AUNQUE HAYA ERROR
+      setUser(null)
+      setProfile(null)
+      setLoading(false)
+      window.location.href = '/auth'
     }
   }
 
-  const updateProfile = async (profileData) => {
-    try {
-      setLoading(true)
-      
-      if (!user) throw new Error('No user logged in')
+  // Inicialización robusta
+  useEffect(() => {
+    let mounted = true
+    
+    const initializeAuth = async () => {
+      try {
+        console.log('🔄 Inicializando autenticación...')
+        
+        // 1. Obtener sesión actual
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('❌ Error obteniendo sesión:', error)
+          if (mounted) {
+            setUser(null)
+            setProfile(null)
+            setLoading(false)
+          }
+          return
+        }
 
-      // Verificar si el perfil ya existe
-      const { data: existingProfile } = await supabase
-        .from('person')
-        .select('id')
-        .eq('id', user.id)
-        .maybeSingle()
-
-      let data, error
-
-      if (existingProfile) {
-        // Actualizar perfil existente
-        const result = await supabase
-          .from('person')
-          .update(profileData)
-          .eq('id', user.id)
-          .select()
-          .maybeSingle()
-        data = result.data
-        error = result.error
-      } else {
-        // Crear nuevo perfil
-        const result = await supabase
-          .from('person')
-          .insert({
-            id: user.id,
-            email: user.email || user.user_metadata?.email,
-            role: user.user_metadata?.role || 'paciente',
-            ...profileData
-          })
-          .select()
-          .maybeSingle()
-        data = result.data
-        error = result.error
+        if (session?.user && mounted) {
+          console.log('✅ Sesión encontrada:', session.user.id)
+          setUser(session.user)
+          
+          // 2. Cargar perfil
+          console.log('🔍 Buscando perfil en tabla person para usuario:', session.user.id)
+          const profileData = await loadUserProfile(session.user.id)
+          if (mounted) {
+            console.log('📋 Resultado del perfil:', profileData ? 'ENCONTRADO' : 'NO ENCONTRADO')
+            if (profileData) {
+              console.log('👤 Datos del perfil:', { 
+                nombre: profileData.nombre, 
+                role: profileData.role, 
+                completado: !!profileData.nombre 
+              })
+            }
+            setProfile(profileData)
+          }
+        } else {
+          console.log('ℹ️ No hay sesión activa')
+        }
+        
+        if (mounted) {
+          setLoading(false)
+        }
+      } catch (error) {
+        console.error('❌ Error en inicialización:', error)
+        if (mounted) {
+          setUser(null)
+          setProfile(null)
+          setLoading(false)
+        }
       }
-
-      if (error) throw error
-
-      setProfile(data)
-      
-      toast({
-        title: "Perfil actualizado",
-        description: "Tu perfil se ha actualizado correctamente."
-      })
-
-      return { data, error: null }
-    } catch (error) {
-      console.error('Error updating profile:', error)
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive"
-      })
-      return { data: null, error }
-    } finally {
-      setLoading(false)
     }
-  }
 
-  // Memorizar el valor del contexto para evitar re-renders innecesarios
-  const value = useMemo(() => ({
+    // 3. Listener para cambios de auth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('🔄 Cambio de estado auth:', event)
+        
+        if (!mounted) return
+        
+        try {
+          if (event === 'SIGNED_IN' && session?.user) {
+            console.log('✅ Usuario logueado:', session.user.id)
+            setUser(session.user)
+            console.log('🔍 Cargando perfil después del login...')
+            const profileData = await loadUserProfile(session.user.id)
+            console.log('📋 Perfil después del login:', profileData ? 'ENCONTRADO' : 'NO ENCONTRADO')
+            setProfile(profileData)
+          } else if (event === 'SIGNED_OUT') {
+            console.log('ℹ️ Usuario deslogueado')
+            setUser(null)
+            setProfile(null)
+          }
+        } catch (error) {
+          console.error('❌ Error en auth state change:', error)
+        } finally {
+          if (mounted) {
+            setLoading(false)
+          }
+        }
+      }
+    )
+
+    // Inicializar
+    initializeAuth()
+
+    // Cleanup
+    return () => {
+      mounted = false
+      subscription?.unsubscribe()
+    }
+  }, [])
+
+  // Timeout de seguridad - nunca más de 8 segundos loading
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.log('⚠️ Timeout de seguridad - terminando loading')
+        setLoading(false)
+      }
+    }, 8000)
+
+    return () => clearTimeout(timeout)
+  }, [loading])
+
+  const value = {
     user,
     profile,
     loading,
-    signUp,
     signIn,
+    signUp,
     signOut,
-    updateProfile,
-    createProfileIfNeeded,
-    refreshProfile: () => user && loadUserProfile(user.id)
-  }), [user, profile, loading])
+    refreshProfile
+  }
 
   return (
     <AuthContext.Provider value={value}>
