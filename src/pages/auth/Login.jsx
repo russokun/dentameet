@@ -170,7 +170,7 @@ const Login = ({ onSwitchToRegister }) => {
           </div>
         </div>
 
-        {/* Social Login Placeholder */}
+       
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
@@ -196,7 +196,11 @@ const Login = ({ onSwitchToRegister }) => {
             Facebook
           </button>
         </div>
-
+        <div className="mt-2 text-xs text-center text-gray-500">
+          <span>
+            <strong>Nota:</strong> El registro e inicio de sesión con redes sociales (Google y Facebook) aún no está disponible. Próximamente estará activo.
+          </span>
+        </div>
         {/* Switch to Register */}
         <div className="text-center pt-4">
           <p className="text-gray-600">
