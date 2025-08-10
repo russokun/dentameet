@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { ProfileService } from '@/services/profileService'
 import { toast } from '@/components/ui/use-toast'
 
 const AuthContext = createContext({})
@@ -60,6 +61,19 @@ export const AuthProvider = ({ children }) => {
     const profileData = await loadUserProfile(user.id)
     setProfile(profileData)
     return profileData
+  }
+
+  // Función para crear/actualizar perfil usando ProfileService
+  const updateProfile = async (profileData) => {
+    if (!user?.id) throw new Error('No hay usuario autenticado')
+    try {
+      const updated = await ProfileService.updateProfile(user.id, profileData)
+      setProfile(updated)
+      return updated
+    } catch (error) {
+      console.error('Error actualizando/creando perfil:', error)
+      throw error
+    }
   }
 
   // Función para hacer login
@@ -301,13 +315,14 @@ export const AuthProvider = ({ children }) => {
   }, [loading])
 
   const value = {
-    user,
-    profile,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-    refreshProfile
+  user,
+  profile,
+  loading,
+  signIn,
+  signUp,
+  signOut,
+  refreshProfile,
+  updateProfile
   }
 
   return (
