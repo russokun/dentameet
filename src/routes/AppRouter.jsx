@@ -37,7 +37,8 @@ const ProtectedRoute = ({ children }) => {
     loading 
   })
   
-  if (loading) return <LoadingSpinner />
+  // Si el perfil aún no fue cargado (undefined), esperar
+  if (loading || typeof profile === 'undefined') return <LoadingSpinner />
   
   // No hay usuario -> redirect a auth
   if (!user) {
@@ -64,7 +65,7 @@ const PublicRoute = ({ children }) => {
     loading 
   })
   
-  if (loading) return <LoadingSpinner />
+  if (loading || typeof profile === 'undefined') return <LoadingSpinner />
   
   // Si hay usuario logueado, redirigir según tenga perfil o no
   if (user) {

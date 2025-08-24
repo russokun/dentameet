@@ -15,7 +15,8 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
+  // undefined = not loaded yet, null = no profile, object = profile
+  const [profile, setProfile] = useState(undefined)
   const [loading, setLoading] = useState(true)
 
   // Cargar perfil real desde Supabase
@@ -28,9 +29,9 @@ export const AuthProvider = ({ children }) => {
         .from('person')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle()
       
-      if (error) {
+  if (error) {
         console.error('❌ Error cargando perfil:', error)
         console.error('❌ Error details:', { 
           message: error.message, 
@@ -47,7 +48,7 @@ export const AuthProvider = ({ children }) => {
       }
       
       console.log('✅ Perfil cargado:', data?.nombre)
-      return data
+  return data
     } catch (error) {
       console.error('❌ Error en loadUserProfile:', error)
       return null
@@ -158,6 +159,16 @@ export const AuthProvider = ({ children }) => {
           console.error('❌ Error en creación de perfil:', profileError)
         }
       }
+
+        // Intentar refrescar perfil en contexto
+        if (data.user) {
+          try {
+            const profileData = await loadUserProfile(data.user.id)
+            setProfile(profileData)
+          } catch (e) {
+            console.warn('No se pudo refrescar perfil tras signUp:', e)
+          }
+        }
       
       console.log('✅ Registro exitoso:', data.user?.id)
       toast({
@@ -207,6 +218,9 @@ export const AuthProvider = ({ children }) => {
   }
 
   // Inicialización robusta
+    console.log('✅ Logout completado')
+
+    // No forzar redirect para no romper SPA; dejar que la app maneje rutas
   useEffect(() => {
     let mounted = true
     
@@ -247,6 +261,13 @@ export const AuthProvider = ({ children }) => {
           }
         } else {
           console.log('ℹ️ No hay sesión activa')
+          // Asegurarnos de definir explícitamente que no hay perfil.
+          // Dejar `profile` como `undefined` causa que los guards muestren
+          // un loading infinito porque comprueban `typeof profile === 'undefined'`.
+          if (mounted) {
+            setUser(null)
+            setProfile(null)
+          }
         }
         
         if (mounted) {

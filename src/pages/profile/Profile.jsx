@@ -113,8 +113,19 @@ const Profile = () => {
     }
   }
 
-  if (!profile) {
+  if (typeof profile === 'undefined') {
     return <div>Cargando perfil...</div>
+  }
+
+  if (profile === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Perfil no encontrado</h2>
+          <p className="text-gray-500 mt-2">Parece que aún no has completado tu perfil.</p>
+        </div>
+      </div>
+    )
   }
 
   return (

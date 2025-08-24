@@ -1,3 +1,5 @@
+
+// ...imports and component start below
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Helmet } from 'react-helmet'
@@ -132,6 +134,12 @@ const Matches = () => {
 
   // Manejar like
   const handleLike = async (likedProfile) => {
+    if (!likedProfile || !likedProfile.id) {
+      console.warn('handleLike called with invalid profile', likedProfile)
+      setCurrentIndex(prev => prev + 1)
+      return
+    }
+
     try {
       const result = await MatchService.recordAction(user.id, likedProfile.id, 'liked')
       
@@ -165,6 +173,12 @@ const Matches = () => {
 
   // Manejar pass
   const handlePass = async (passedProfile) => {
+    if (!passedProfile || !passedProfile.id) {
+      console.warn('handlePass called with invalid profile', passedProfile)
+      setCurrentIndex(prev => prev + 1)
+      return
+    }
+
     try {
       await MatchService.recordAction(user.id, passedProfile.id, 'passed')
       setCurrentIndex(prev => prev + 1)
@@ -211,19 +225,7 @@ const Matches = () => {
     )
   }
 
-  if (!user || !profile) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
-        <motion.div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-700">Acceso requerido</h2>
-          <p className="text-gray-500 mt-2">Por favor inicia sesión para ver matches</p>
-          <Button onClick={() => navigate('/auth')} className="mt-4">
-            Iniciar Sesión
-          </Button>
-        </motion.div>
-      </div>
-    )
-  }
+  // Si el perfil está en proceso de carga, mostrar loading en vez de
 
   if (profilesLoading) {
     return (
