@@ -15,6 +15,7 @@ import AuthPage from '../pages/auth/AuthPage'
 import ProfileSetup from '../pages/profile/ProfileSetup'
 import Dashboard from '../pages/Dashboard'
 import Matches from '../pages/Matches'
+import MyMatches from '../pages/MyMatches'
 import Appointments from '../pages/Appointments'
 import Feedback from '../pages/Feedback'
 import Profile from '../pages/Profile'
@@ -131,6 +132,12 @@ function AppRouter() {
             <Route path="/matches" element={
               <ProtectedRoute>
                 <Matches />
+              </ProtectedRoute>
+            } />
+
+            <Route path="/my-matches" element={
+              <ProtectedRoute>
+                <MyMatches />
               </ProtectedRoute>
             } />
             

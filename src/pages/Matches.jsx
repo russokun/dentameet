@@ -163,11 +163,26 @@ const Matches = () => {
       setCurrentIndex(prev => prev + 1)
     } catch (error) {
       console.error('Error recording like:', error)
-      toast({
-        title: "Error",
-        description: "No se pudo enviar el like. Intenta nuevamente.",
-        variant: "destructive"
-      })
+      // Manejo especial para errores de Row Level Security (RLS)
+      if (error && (error.code === '42501' || (error.original && error.original.code === '42501'))) {
+        toast({
+          title: "Acción bloqueada por seguridad",
+          description: "No se pudo registrar el like porque las políticas RLS en la tabla 'matches' lo impiden. Revisa las policies en Supabase (INSERT/UPDATE) o crea una RPC segura.",
+          variant: "destructive"
+        })
+      } else if (error && (error.code === 'RPC_MISSING' || (error.message && error.message.toLowerCase().includes('rpc')))) {
+        toast({
+          title: "Función RPC faltante",
+          description: "La función RPC `create_or_update_match_rpc` no fue encontrada en la base de datos. Crea la función en Supabase o ejecuta las migraciones proporcionadas.",
+          variant: "destructive"
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "No se pudo enviar el like. Intenta nuevamente.",
+          variant: "destructive"
+        })
+      }
     }
   }
 

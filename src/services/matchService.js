@@ -521,79 +521,83 @@ export class MatchService {
 
   static async createMatch(user1Id, user2Id, isLike = true) {
     try {
-      // 1) Si ya existe un swipe en la MISMA direccion (usuario ya swipeó antes), actualizarlo
-      const { data: sameDirection, error: sameErr } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('user1_id', user1Id)
-        .eq('user2_id', user2Id)
-        .maybeSingle()
+      // Preferimos la ruta RPC: la función en la DB debe encargarse de la lógica atómica
+      // create_or_update_match_rpc(p_target uuid, p_is_like boolean) -> jsonb { match, isMutual }
+      // Nota: pasamos p_is_like primero para coincidir con cómo PostgREST mapea parámetros
+      const { data, error } = await supabase.rpc('create_or_update_match_rpc', {
+        p_is_like: isLike,
+        p_target: user2Id
+      })
 
-      if (sameErr) throw sameErr
+      if (error) throw error
 
-      if (sameDirection) {
-        // Actualizar el swipe existente en la misma dirección
-        const { data: updated, error: updErr } = await supabase
-          .from('matches')
-          .update({
-            user1_liked: isLike,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', sameDirection.id)
-          .select()
-          .single()
+      // supabase.rpc puede devolver un valor simple o un array; normalizamos
+      const result = Array.isArray(data) ? data[0] : data
 
-        if (updErr) throw updErr
-        return { match: updated, isMutual: !!updated.is_mutual }
-      }
+      // Intentamos extraer match e isMutual
+      const match = result?.match || result
+      const isMutual = !!(result?.isMutual)
 
-      // 2) Revisar si existe un swipe inverso (user2 -> user1). Si existe, actualizarlo y marcar mutual si aplica
-      const { data: inverse, error: invErr } = await supabase
-        .from('matches')
-        .select('*')
-        .eq('user1_id', user2Id)
-        .eq('user2_id', user1Id)
-        .maybeSingle()
-
-      if (invErr) throw invErr
-
-      if (inverse) {
-        // El swipe inverso existe; actualizar user2_liked (en ese registro) y marcar is_mutual si ambos gustaron
-        const willBeMutual = !!inverse.user1_liked && isLike
-        const { data: updatedInverse, error: updInvErr } = await supabase
-          .from('matches')
-          .update({
-            user2_liked: isLike,
-            is_mutual: willBeMutual,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', inverse.id)
-          .select()
-          .single()
-
-        if (updInvErr) throw updInvErr
-        return { match: updatedInverse, isMutual: willBeMutual }
-      }
-
-      // 3) Si no existe ningún swipe previo, insertar uno nuevo (user1 -> user2)
-      const { data: newSwipe, error: swipeError } = await supabase
-        .from('matches')
-        .insert({
-          user1_id: user1Id,
-          user2_id: user2Id,
-          user1_liked: isLike,
-          user2_liked: false,
-          is_mutual: false,
-          created_at: new Date().toISOString()
-        })
-        .select()
-        .single()
-
-      if (swipeError) throw swipeError
-
-      return { match: newSwipe, isMutual: false }
+      return { match, isMutual }
     } catch (error) {
-      console.error('Error creating match:', error)
+      // Mejor logging para depuración en cliente
+      try { console.error('Error creating match (RPC):', JSON.stringify(error, null, 2)) } catch (e) { console.error('Error creating match (RPC) (raw):', error) }
+      // Detectar error de Row Level Security y dar mensaje más útil
+      if (error && error.code === '42501') {
+        const rlsError = new Error('No se pudo crear el match: la política de seguridad de filas (RLS) impide insertar o ejecutar la operación. Asegúrate de crear la función RPC `create_or_update_match_rpc` y conceder EXECUTE a `authenticated`, o ajustar las policies.');
+        rlsError.code = error.code
+        rlsError.original = error
+        throw rlsError
+      }
+      // Detectar función RPC ausente o endpoint 404
+  const msg = String(error?.message || '')
+  // Distinguimos "function does not exist" de otros "does not exist"
+  // (por ejemplo, "column ... does not exist"). Solo tratar como RPC
+  // faltante cuando el mensaje menciona explicitamente una function.
+  const functionDoesNotExist = /function/i.test(msg) && /does not exist/i.test(msg)
+  if (error && (error.code === '42883' || functionDoesNotExist || error?.status === 404 || /not found/i.test(msg) || /404/i.test(msg))) {
+        const rpcMissing = new Error('La función RPC `create_or_update_match_rpc` no existe o no es accesible. Crea la función en Postgres (PL/pgSQL) y concede EXECUTE a `authenticated` (o revisa el schema).');
+        rpcMissing.code = error.code || 'RPC_MISSING'
+        rpcMissing.original = error
+        // Si estamos en ambiente de desarrollo, intentar fallback directo (solo para dev)
+        let isDev = false
+        try {
+          if (typeof process !== 'undefined' && process.env && process.env.NODE_ENV) {
+            isDev = process.env.NODE_ENV !== 'production'
+          }
+        } catch (_) {
+          isDev = false
+        }
+        if (isDev) {
+          try {
+            console.warn('RPC missing - attempting development fallback: direct insert into matches')
+            const { data: newSwipe, error: swipeError } = await supabase
+              .from('matches')
+              .insert({
+                user1_id: user1Id,
+                user2_id: user2Id,
+                user1_liked: isLike,
+                user2_liked: false,
+                is_mutual: false,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .select()
+              .single()
+
+            if (swipeError) {
+              console.warn('Dev fallback insert failed:', swipeError)
+            } else {
+              return { match: newSwipe, isMutual: false }
+            }
+          } catch (devErr) {
+            console.warn('Dev fallback insert threw:', devErr)
+          }
+        }
+
+        throw rpcMissing
+      }
+
       throw error
     }
   }
@@ -611,6 +615,13 @@ export class MatchService {
       }
     } catch (error) {
       console.error('Error recording action:', error)
+      // Propagar con mensaje más amigable si es RLS
+      if (error && error.code === '42501') {
+        const rlsError = new Error('Acción bloqueada por políticas de seguridad (RLS). Asegúrate de que la tabla "matches" permite inserts/updates para el role usado por el cliente o implementa una RPC segura en Supabase.');
+        rlsError.code = error.code
+        rlsError.original = error
+        throw rlsError
+      }
       throw error
     }
   }

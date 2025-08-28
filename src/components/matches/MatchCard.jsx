@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { forwardRef, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart, X, Star, MapPin, GraduationCap, User, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
-const MatchCard = ({ profile, onLike, onPass, isTopCard = false }) => {
+const MatchCard = forwardRef(({ profile, onLike, onPass, isTopCard = false }, ref) => {
   const [isDragging, setIsDragging] = useState(false)
   const [exitDirection, setExitDirection] = useState(null)
 
@@ -72,6 +72,7 @@ const MatchCard = ({ profile, onLike, onPass, isTopCard = false }) => {
 
   return (
     <motion.div
+  ref={ref}
       className="absolute inset-0 cursor-grab active:cursor-grabbing"
       variants={cardVariants}
       initial="initial"
@@ -193,6 +194,6 @@ const MatchCard = ({ profile, onLike, onPass, isTopCard = false }) => {
       </div>
     </motion.div>
   )
-}
+})
 
 export default MatchCard
