@@ -570,28 +570,13 @@ export class MatchService {
         }
         if (isDev) {
           try {
-            console.warn('RPC missing - attempting development fallback: direct insert into matches')
-            const { data: newSwipe, error: swipeError } = await supabase
-              .from('matches')
-              .insert({
-                user1_id: user1Id,
-                user2_id: user2Id,
-                user1_liked: isLike,
-                user2_liked: false,
-                is_mutual: false,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .select()
-              .single()
-
-            if (swipeError) {
-              console.warn('Dev fallback insert failed:', swipeError)
-            } else {
-              return { match: newSwipe, isMutual: false }
-            }
+            // Dev mode: do NOT perform any persistent writes here.
+            // To avoid creating unilateral match rows in development (so behavior
+            // matches production RPC), we return a non-persistent result.
+            console.warn('RPC missing - dev mode: skipping any DB insert to avoid unilateral matches (no-op).')
+            return { match: null, isMutual: false }
           } catch (devErr) {
-            console.warn('Dev fallback insert threw:', devErr)
+            console.warn('Dev fallback threw:', devErr)
           }
         }
 
