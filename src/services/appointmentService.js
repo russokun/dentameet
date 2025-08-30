@@ -32,18 +32,18 @@ export class AppointmentService {
         .from('appointments')
         .select(`
           *,
-          paciente:person!appointments_paciente_id_fkey(*),
-          estudiante:person!appointments_estudiante_id_fkey(*)
+          user1:person!appointments_user1_id_fkey(*),
+          user2:person!appointments_user2_id_fkey(*)
         `)
 
-      // Filtrar según el rol del usuario
-      if (role === 'paciente') {
-        query = query.eq('paciente_id', userId)
-      } else if (role === 'estudiante') {
-        query = query.eq('estudiante_id', userId)
+      // Filtrar según el usuario
+      if (role === 'user1') {
+        query = query.eq('user1_id', userId)
+      } else if (role === 'user2') {
+        query = query.eq('user2_id', userId)
       } else {
-        // Para dentameeter o admin, ver todas donde participe
-        query = query.or(`paciente_id.eq.${userId},estudiante_id.eq.${userId}`)
+        // Para cualquier rol, ver todas donde participe
+        query = query.or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
       }
 
       const { data, error } = await query.order('fecha_hora', { ascending: true })
@@ -58,26 +58,35 @@ export class AppointmentService {
 
   static async updateAppointmentStatus(appointmentId, status, userId) {
     try {
+      // Determinar si el usuario es user1 o user2
+      const { data: appointment, error: fetchError } = await supabase
+        .from('appointments')
+        .select('user1_id, user2_id, confirmado_por_user1, confirmado_por_user2')
+        .eq('id', appointmentId)
+        .single();
+
+      if (fetchError) throw fetchError;
+      let updateFields = { updated_at: new Date().toISOString() };
+
+      if (status) updateFields.status = status;
+      if (appointment.user1_id === userId) {
+        updateFields.confirmado_por_user1 = true;
+      } else if (appointment.user2_id === userId) {
+        updateFields.confirmado_por_user2 = true;
+      }
+
       const { data, error } = await supabase
         .from('appointments')
-        .update({
-          status,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateFields)
         .eq('id', appointmentId)
-        .or(`paciente_id.eq.${userId},estudiante_id.eq.${userId}`)
-        .select(`
-          *,
-          paciente:person!appointments_paciente_id_fkey(*),
-          estudiante:person!appointments_estudiante_id_fkey(*)
-        `)
-        .single()
+        .select(`*, user1:person!appointments_user1_id_fkey(*), user2:person!appointments_user2_id_fkey(*)`)
+        .single();
 
-      if (error) throw error
-      return data
+      if (error) throw error;
+      return data;
     } catch (error) {
-      console.error('Error updating appointment status:', error)
-      throw error
+      console.error('Error updating appointment status:', error);
+      throw error;
     }
   }
 

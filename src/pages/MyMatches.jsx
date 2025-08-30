@@ -14,6 +14,13 @@ const MyMatches = () => {
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Protección: si no hay usuario, redirigir a /auth
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth', { replace: true })
+    }
+  }, [user, navigate])
+
   useEffect(() => {
     const loadMatches = async () => {
       if (!user?.id) {

@@ -30,28 +30,34 @@ const LoadingSpinner = () => (
 // Route protection component
 const ProtectedRoute = ({ children }) => {
   const { user, profile, loading } = useAuth()
-  
-  console.log('🔐 ProtectedRoute check:', { 
-    path: window.location.pathname, 
-    user: user?.id, 
-    hasProfile: !!profile, 
-    loading 
+  console.log('🔒 ProtectedRoute check:', {
+    path: window.location.pathname,
+    user,
+    profile,
+    loading,
+    profileType: typeof profile
   })
-  
-  // Si el perfil aún no fue cargado (undefined), esperar
-  if (loading || typeof profile === 'undefined') return <LoadingSpinner />
-  
-  // No hay usuario -> redirect a auth
+
+  // Esperar si está cargando o el perfil sigue indefinido
+  if (loading || typeof profile === 'undefined') {
+    console.log('🔒 ProtectedRoute: loading o perfil indefinido, mostrando spinner')
+    return <LoadingSpinner />
+  }
+
+  // Si no hay usuario, redirigir a /auth
   if (!user) {
+    console.log('🔒 ProtectedRoute: no user, redirigiendo a /auth')
     return <Navigate to="/auth" replace />
   }
-  
-  // Hay usuario pero no perfil -> redirect a profile setup
+
+  // Si el perfil es null, redirigir a /profile/setup
   if (!profile) {
+    console.log('🔒 ProtectedRoute: perfil nulo, redirigiendo a /profile/setup')
     return <Navigate to="/profile/setup" replace />
   }
-  
-  // Todo OK -> mostrar contenido
+
+  // Si todo está bien, mostrar el contenido protegido
+  console.log('🔒 ProtectedRoute: acceso permitido')
   return children
 }
 

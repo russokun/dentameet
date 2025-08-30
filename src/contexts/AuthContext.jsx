@@ -22,7 +22,6 @@ export const AuthProvider = ({ children }) => {
   // Cargar perfil real desde Supabase
   const loadUserProfile = async (userId) => {
     if (!userId) return null
-    
     try {
       console.log('🔄 Cargando perfil para usuario:', userId)
       const { data, error } = await supabase
@@ -30,25 +29,26 @@ export const AuthProvider = ({ children }) => {
         .select('*')
         .eq('id', userId)
         .maybeSingle()
-      
-  if (error) {
+
+      console.log('🔄 Resultado raw de perfil:', { data, error })
+
+      if (error) {
         console.error('❌ Error cargando perfil:', error)
-        console.error('❌ Error details:', { 
-          message: error.message, 
-          details: error.details, 
-          hint: error.hint,
-          code: error.code 
-        })
         return null
       }
-      
-      if (!data) {
-        console.log('ℹ️ No se encontró perfil para usuario:', userId)
+
+      // Si el perfil existe y tiene al menos un campo relevante (nombre, email, role), lo consideramos válido
+      if (data && (data.nombre || data.email || data.role)) {
+        console.log('✅ Perfil cargado:', data)
+        return data
+      } else if (data) {
+        // Si existe el objeto pero no tiene los campos esperados, mostrarlo igual para debug
+        console.warn('⚠️ Perfil encontrado pero incompleto:', data)
+        return data
+      } else {
+        console.log('ℹ️ Perfil no válido o incompleto para usuario:', userId)
         return null
       }
-      
-      console.log('✅ Perfil cargado:', data?.nombre)
-  return data
     } catch (error) {
       console.error('❌ Error en loadUserProfile:', error)
       return null
@@ -227,10 +227,9 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       try {
         console.log('🔄 Inicializando autenticación...')
-        
         // 1. Obtener sesión actual
         const { data: { session }, error } = await supabase.auth.getSession()
-        
+        console.log('🔄 Estado inicial:', { session, error })
         if (error) {
           console.error('❌ Error obteniendo sesión:', error)
           if (mounted) {
@@ -244,33 +243,22 @@ export const AuthProvider = ({ children }) => {
         if (session?.user && mounted) {
           console.log('✅ Sesión encontrada:', session.user.id)
           setUser(session.user)
-          
           // 2. Cargar perfil
           console.log('🔍 Buscando perfil en tabla person para usuario:', session.user.id)
           const profileData = await loadUserProfile(session.user.id)
           if (mounted) {
-            console.log('📋 Resultado del perfil:', profileData ? 'ENCONTRADO' : 'NO ENCONTRADO')
-            if (profileData) {
-              console.log('👤 Datos del perfil:', { 
-                nombre: profileData.nombre, 
-                role: profileData.role, 
-                completado: !!profileData.nombre 
-              })
-            }
+            console.log('📋 Resultado del perfil:', profileData ? 'ENCONTRADO' : 'NO ENCONTRADO', profileData)
             setProfile(profileData)
           }
         } else {
           console.log('ℹ️ No hay sesión activa')
-          // Asegurarnos de definir explícitamente que no hay perfil.
-          // Dejar `profile` como `undefined` causa que los guards muestren
-          // un loading infinito porque comprueban `typeof profile === 'undefined'`.
           if (mounted) {
             setUser(null)
             setProfile(null)
           }
         }
-        
         if (mounted) {
+          console.log('🔄 Estado después de inicialización:', { user, profile, loading })
           setLoading(false)
         }
       } catch (error) {
@@ -283,20 +271,22 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 3. Listener para cambios de auth
+    // 3. Listener para cambios de auth (incluye refresco de token y actualización de usuario)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Cambio de estado auth:', event)
-        
+        console.log('🔄 Cambio de estado auth:', event, { session })
         if (!mounted) return
-        
         try {
-          if (event === 'SIGNED_IN' && session?.user) {
-            console.log('✅ Usuario logueado:', session.user.id)
+          const validEvents = [
+            'SIGNED_IN',
+            'TOKEN_REFRESHED',
+            'USER_UPDATED'
+          ]
+          if (validEvents.includes(event) && session?.user) {
+            console.log('✅ Usuario activo (evento:', event, '):', session.user.id)
             setUser(session.user)
-            console.log('🔍 Cargando perfil después del login...')
             const profileData = await loadUserProfile(session.user.id)
-            console.log('📋 Perfil después del login:', profileData ? 'ENCONTRADO' : 'NO ENCONTRADO')
+            console.log('📋 Perfil después de evento auth:', profileData ? 'ENCONTRADO' : 'NO ENCONTRADO', profileData)
             setProfile(profileData)
           } else if (event === 'SIGNED_OUT') {
             console.log('ℹ️ Usuario deslogueado')
@@ -307,6 +297,7 @@ export const AuthProvider = ({ children }) => {
           console.error('❌ Error en auth state change:', error)
         } finally {
           if (mounted) {
+            console.log('🔄 Estado después de cambio de auth:', { user, profile, loading })
             setLoading(false)
           }
         }
@@ -323,17 +314,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [])
 
-  // Timeout de seguridad - nunca más de 8 segundos loading
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      if (loading) {
-        console.log('⚠️ Timeout de seguridad - terminando loading')
-        setLoading(false)
-      }
-    }, 8000)
-
-    return () => clearTimeout(timeout)
-  }, [loading])
+  // Eliminado timeout de seguridad: loading solo termina cuando usuario y perfil estén listos
 
   const value = {
   user,
