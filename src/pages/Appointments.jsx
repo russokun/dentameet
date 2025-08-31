@@ -21,7 +21,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner'
 const Appointments = () => {
   const { user, profile } = useAuth()
   const [appointments, setAppointments] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [appointmentsError, setAppointmentsError] = useState(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [matches, setMatches] = useState([])
@@ -67,18 +67,17 @@ const Appointments = () => {
 
   const loadAppointments = async () => {
     try {
-      setLoading(true)
-      const data = await AppointmentService.getAppointments(user.id, profile.role)
-      setAppointments(data)
+      setAppointmentsError(null);
+      const data = await AppointmentService.getAppointments(user.id, profile.role);
+      setAppointments(data);
     } catch (error) {
-      console.error('Error loading appointments:', error)
+      setAppointmentsError(error);
+      setAppointments([]);
       toast({
         title: "Error",
         description: "No se pudieron cargar las citas.",
         variant: "destructive"
-      })
-    } finally {
-      setLoading(false)
+      });
     }
   }
 
@@ -174,10 +173,24 @@ const Appointments = () => {
   }
 
   const handleWhatsAppContact = (appointment) => {
-    const otherUser = appointment.paciente_id === user.id ? appointment.estudiante : appointment.paciente
-    const message = generateWhatsAppMessage(profile, otherUser, appointment)
-    const whatsappUrl = generateWhatsAppURL(otherUser.telefono, message)
-    window.open(whatsappUrl, '_blank')
+    // Determinar el otro usuario según el contexto de user1/user2
+    let otherUser = null;
+    if (appointment.user1_id === user.id) {
+      otherUser = appointment.user2;
+    } else if (appointment.user2_id === user.id) {
+      otherUser = appointment.user1;
+    }
+    if (!otherUser?.telefono) {
+      toast({
+        title: "Error",
+        description: "El usuario no tiene número de teléfono registrado.",
+        variant: "destructive"
+      });
+      return;
+    }
+    const message = generateWhatsAppMessage(profile, otherUser, appointment);
+    const whatsappUrl = generateWhatsAppURL(otherUser.telefono, message);
+    window.open(whatsappUrl, '_blank');
   }
 
   const getStatusIcon = (status) => {
@@ -218,9 +231,24 @@ const Appointments = () => {
   }
 
   const groupedAppointments = groupAppointmentsByStatus()
+  // Eliminado: if (loading) {
+  if (appointmentsError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <p className="text-red-600 text-lg font-semibold mb-2">Error cargando citas</p>
+        <p className="text-gray-600 mb-4">{appointmentsError.message || 'Intenta recargar la página o contacta soporte.'}</p>
+        <Button onClick={loadAppointments} className="btn-primary">Reintentar</Button>
+      </div>
+    );
+  }
 
-  if (loading) {
-    return <LoadingSpinner message="Cargando citas..." />
+  if (appointments.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96">
+        <p className="text-gray-600 text-lg font-semibold mb-2">No tienes citas programadas.</p>
+        <Button onClick={loadAppointments} className="btn-primary">Recargar</Button>
+      </div>
+    );
   }
 
   return (
@@ -481,11 +509,27 @@ const Appointments = () => {
                           <div className="space-y-1">
                             <div className="flex items-center">
                               <User className="w-4 h-4 mr-2" />
-                              {(otherUser?.nombre || 'Sin nombre')} {(otherUser?.apellido || '')}
+                              {(() => {
+                                let otherUser = null;
+                                if (appointment.user1_id === user.id) {
+                                  otherUser = appointment.user2;
+                                } else if (appointment.user2_id === user.id) {
+                                  otherUser = appointment.user1;
+                                }
+                                return `${otherUser?.nombre || 'Sin nombre'} ${otherUser?.apellido || ''}`;
+                              })()}
                             </div>
                             <div className="flex items-center">
                               <MapPin className="w-4 h-4 mr-2" />
-                              {otherUser?.comuna || 'Sin comuna'}
+                              {(() => {
+                                let otherUser = null;
+                                if (appointment.user1_id === user.id) {
+                                  otherUser = appointment.user2;
+                                } else if (appointment.user2_id === user.id) {
+                                  otherUser = appointment.user1;
+                                }
+                                return otherUser?.comuna || 'Sin comuna';
+                              })()}
                             </div>
                           </div>
                         </div>
@@ -565,6 +609,7 @@ const Appointments = () => {
       </div>
     </>
   )
+
 }
 
-export default Appointments
+export default Appointments;
