@@ -4,6 +4,16 @@ import { supabase } from '@/lib/supabaseClient'
 export class AppointmentService {
   static async createAppointment(appointmentData) {
     try {
+      // Obtener usuario autenticado y token
+      const { data: { session } } = await supabase.auth.getSession();
+      const authUser = session?.user;
+      console.log('🔍 [AppointmentService] Usuario autenticado:', authUser);
+      console.log('🔍 [AppointmentService] JWT:', session?.access_token);
+      console.log('🔍 [AppointmentService] Datos enviados a appointments:', {
+        ...appointmentData,
+        status: 'pendiente',
+        created_at: new Date().toISOString()
+      });
       const { data, error } = await supabase
         .from('appointments')
         .insert({
@@ -13,8 +23,8 @@ export class AppointmentService {
         })
         .select(`
           *,
-          paciente:person!appointments_paciente_id_fkey(*),
-          estudiante:person!appointments_estudiante_id_fkey(*)
+          user1:person!appointments_user1_id_fkey(*),
+          user2:person!appointments_user2_id_fkey(*)
         `)
         .single()
 
@@ -100,11 +110,11 @@ export class AppointmentService {
           updated_at: new Date().toISOString()
         })
         .eq('id', appointmentId)
-        .or(`paciente_id.eq.${userId},estudiante_id.eq.${userId}`)
+  .or(`user1_id.eq.${userId},user2_id.eq.${userId}`)
         .select(`
           *,
-          paciente:person!appointments_paciente_id_fkey(*),
-          estudiante:person!appointments_estudiante_id_fkey(*)
+          user1:person!appointments_user1_id_fkey(*),
+          user2:person!appointments_user2_id_fkey(*)
         `)
         .single()
 
@@ -122,7 +132,7 @@ export class AppointmentService {
       const { data: existingAppointments, error } = await supabase
         .from('appointments')
         .select('fecha_hora')
-        .eq('estudiante_id', estudianteId)
+  .eq('user2_id', estudianteId)
         .gte('fecha_hora', `${fecha} 00:00:00`)
         .lt('fecha_hora', `${fecha} 23:59:59`)
         .neq('status', 'cancelada')

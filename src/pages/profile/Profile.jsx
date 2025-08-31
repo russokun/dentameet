@@ -128,6 +128,7 @@ const Profile = () => {
     )
   }
 
+  // HABILITAR FORMULARIO DE EDICIÓN
   return (
     <>
       <Helmet>
@@ -173,50 +174,6 @@ const Profile = () => {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Información básica */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <Label htmlFor="nombre" className="block text-sm font-medium text-gray-700 mb-2">
-                  <User className="h-4 w-4 inline mr-2" />
-                  Nombre *
-                </Label>
-                <Input
-                  id="nombre"
-                  {...register('nombre')}
-                  className={errors.nombre ? 'border-red-500' : ''}
-                />
-                {errors.nombre && (
-                  <p className="text-red-500 text-sm mt-1">{errors.nombre.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="apellido" className="block text-sm font-medium text-gray-700 mb-2">
-                  Apellido *
-                </Label>
-                <Input
-                  id="apellido"
-                  {...register('apellido')}
-                  className={errors.apellido ? 'border-red-500' : ''}
-                />
-                {errors.apellido && (
-                  <p className="text-red-500 text-sm mt-1">{errors.apellido.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="telefono" className="block text-sm font-medium text-gray-700 mb-2">
-                  <Phone className="h-4 w-4 inline mr-2" />
-                  Teléfono *
-                </Label>
-                <Input
-                  id="telefono"
-                  {...register('telefono')}
-                  className={errors.telefono ? 'border-red-500' : ''}
-                />
-                {errors.telefono && (
-                  <p className="text-red-500 text-sm mt-1">{errors.telefono.message}</p>
-                )}
-              </div>
-
               <div>
                 <RegionComunaSelector
                   regionValue={watch('region')}

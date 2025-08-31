@@ -1,3 +1,4 @@
+import { supabase } from '@/lib/supabaseClient'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { motion } from 'framer-motion'
@@ -13,6 +14,7 @@ import { Helmet } from 'react-helmet'
 import { appointmentSchema } from '@/lib/zodSchemas'
 import { generateWhatsAppURL, generateWhatsAppMessage, formatDate, formatTime } from '@/utils/matchUtils'
 import { getTratamientosCompatibles, isAppointmentConfirmed } from '@/utils/appointmentUtils'
+import { getHorasPorRango } from '@/utils/appointmentUtils'
 import { toast } from '@/components/ui/use-toast'
 import LoadingSpinner from '@/components/ui/LoadingSpinner'
 
@@ -81,17 +83,51 @@ const Appointments = () => {
   }
 
   const handleCreateAppointment = async (data) => {
+  // Depuración avanzada de sesión y JWT
+  const { data: { session } } = await supabase.auth.getSession();
+  const authUser = session?.user;
+  console.log('🔍 Supabase session:', session);
+  if (session) {
+    console.log('🔍 JWT access_token:', session.access_token);
+  } else {
+    console.warn('⚠️ No hay sesión activa en Supabase');
+  }
+  console.log('🔍 authUser:', authUser);
+  console.log('🔍 user (context):', user);
+  if (!user?.id || !authUser?.id) {
+    toast({
+      title: "Error de sesión",
+      description: "Debes iniciar sesión para crear una cita.",
+      variant: "destructive"
+    });
+    return;
+  }
+  // ...resto del código, asegurando que no se vuelve a declarar authUser
+  // Verificar sesión activa antes de crear cita
+  if (!user?.id || !authUser?.id) {
+    toast({
+      title: "Error de sesión",
+      description: "Debes iniciar sesión para crear una cita.",
+      variant: "destructive"
+    });
+    return;
+  }
+  // Obtener el match seleccionado antes de depurar
+  const match = matches.find(m => m.id === selectedMatchId);
+  // Depuración: imprimir IDs relevantes
+  console.log('user.id:', user?.id);
+  console.log('authUser.id:', authUser?.id);
+  console.log('match:', match);
+  console.log('match.user1_id:', match?.user1_id);
+  console.log('match.user2_id:', match?.user2_id);
     try {
       const match = matches.find(m => m.id === selectedMatchId)
       if (!match) throw new Error('Debes seleccionar un usuario para la cita.')
 
-      // Filtra roles
-      const paciente_id = match.paciente_id
-      const estudiante_id = match.estudiante_id
-
+      // Usar los campos user1_id y user2_id del objeto match (estructura real de la tabla matches)
       const appointmentData = {
-        paciente_id,
-        estudiante_id,
+        user1_id: match.user1_id,
+        user2_id: match.user2_id,
         fecha_hora: `${data.fecha} ${data.hora}:00`,
         tratamiento: data.tratamiento, // Si permites varios, usa data.tratamiento.join(', ')
         notas: data.notas
@@ -281,13 +317,20 @@ const Appointments = () => {
                       ]).then(([user1, user2]) => {
                         setTratamientosDisponibles(getTratamientosCompatibles(
                           user1.tratamientos_interes,
-                          user2.especialidades
+                          user2.tratamientos_interes
                         ))
+                        // Convertir rangos de horario en arrays de horas válidas y filtrar intersección
+                        const horasUser1 = Array.isArray(user1.horarios_disponibles)
+                          ? user1.horarios_disponibles.flatMap(r => getHorasPorRango(r))
+                          : [];
+                        const horasUser2 = Array.isArray(user2.horarios_disponibles)
+                          ? user2.horarios_disponibles.flatMap(r => getHorasPorRango(r))
+                          : [];
                         setHorariosDisponibles(
-                          Array.isArray(user1.horarios_disponibles) && Array.isArray(user2.horarios_disponibles)
-                            ? user1.horarios_disponibles.filter(h => user2.horarios_disponibles.includes(h))
+                          horasUser1.length && horasUser2.length
+                            ? horasUser1.filter(h => horasUser2.includes(h))
                             : []
-                        )
+                        );
                       }).catch(() => {
                         setTratamientosDisponibles([])
                         setHorariosDisponibles([])
@@ -305,11 +348,11 @@ const Appointments = () => {
                     <option value="" disabled>No tienes matches disponibles</option>
                   )}
                   {matches.map(m => {
-                    // Mostrar ambos usuarios en el match
+                    // Mostrar ambos usuarios en el match, manejo defensivo
                     if (!m.user1 || !m.user2) return null;
                     return (
                       <option key={m.id} value={m.id}>
-                        {m.user1.nombre} {m.user1.apellido} - {m.user2.nombre} {m.user2.apellido}
+                        {(m.user1?.nombre || 'Sin nombre')} {(m.user1?.apellido || '')} - {(m.user2?.nombre || 'Sin nombre')} {(m.user2?.apellido || '')}
                       </option>
                     );
                   })}
@@ -438,11 +481,11 @@ const Appointments = () => {
                           <div className="space-y-1">
                             <div className="flex items-center">
                               <User className="w-4 h-4 mr-2" />
-                              {otherUser.nombre} {otherUser.apellido}
+                              {(otherUser?.nombre || 'Sin nombre')} {(otherUser?.apellido || '')}
                             </div>
                             <div className="flex items-center">
                               <MapPin className="w-4 h-4 mr-2" />
-                              {otherUser.comuna}
+                              {otherUser?.comuna || 'Sin comuna'}
                             </div>
                           </div>
                         </div>
@@ -506,7 +549,7 @@ const Appointments = () => {
                       <div>
                         <h3 className="font-semibold text-gray-800">{appointment.tratamiento}</h3>
                         <p className="text-sm text-gray-600">
-                          {formatDate(appointment.fecha_hora)} • {otherUser.nombre} {otherUser.apellido}
+                          {formatDate(appointment.fecha_hora)} • {(otherUser?.nombre || 'Sin nombre')} {(otherUser?.apellido || '')}
                         </p>
                       </div>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>

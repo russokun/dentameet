@@ -3,6 +3,21 @@ import { calculateDistance } from '@/utils/matchUtils'
 
 // Servicio premium para el sistema de matches
 export class MatchService {
+  // Obtener datos de usuario por ID (tratamientos_interes, horarios_disponibles, etc)
+  static async getUserById(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('person')
+        .select(`id, nombre, apellido, role, tratamientos_interes, horarios_disponibles, especialidades, region, comuna, telefono, descripcion, universidad`)
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching user by ID:', error);
+      throw error;
+    }
+  }
   // Obtener perfiles compatibles con sistema de scoring avanzado
   static async getPotentialMatches(userId, userRole, limit = 10) {
     try {
