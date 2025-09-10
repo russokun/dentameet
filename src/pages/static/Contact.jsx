@@ -90,10 +90,10 @@ const Contact = () => {
   ];
 
   const socialLinks = [
-    { icon: Facebook, name: 'Facebook', url: '#' },
-    { icon: Instagram, name: 'Instagram', url: '#' },
-    { icon: TikTokIcon, name: 'TikTok', url: '#' },
-    { icon: Linkedin, name: 'LinkedIn', url: '#' }
+  { icon: Facebook, name: 'Facebook', url: '#' },
+  { icon: Instagram, name: 'Instagram', url: 'https://www.instagram.com/pacientefacil/' },
+  { icon: TikTokIcon, name: 'TikTok', url: 'https://www.tiktok.com/@dentameet_pacientefacil' },
+  { icon: Linkedin, name: 'LinkedIn', url: 'https://www.linkedin.com/in/dentameet-pacientef%C3%A1cil-168b51374/?originalSubdomain=cl' }
   ];
 
   return (
@@ -149,38 +149,13 @@ const Contact = () => {
                   ))}
                 </div>
               </div>
-
-              {/* Redes sociales */}
-              <div>
-                <h3 className="text-xl font-bold text-[#1A237E] mb-4">
-                  Síguenos en Redes Sociales
-                </h3>
-                <div className="flex space-x-4">
-                  {socialLinks.map((social, index) => (
-                    <a
-                      key={index}
-                      href={social.url}
-                      className="bg-white p-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 card-hover"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toast({
-                          title: "🚧 Esta función no está implementada aún",
-                          description: "¡Pero no te preocupes! Puedes solicitarla en tu próximo mensaje! 🚀"
-                        });
-                      }}
-                    >
-                      <social.icon className="h-6 w-6 text-[#1A237E]" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-
               {/* Imagen */}
               <div className="hidden lg:block">
-                <img  
-                  className="rounded-2xl shadow-lg w-full" 
+                <img
+                  className="rounded-2xl shadow-lg w-full max-h-[500px] object-cover"
                   alt="Equipo de DentaMeet trabajando"
-                 src="https://images.unsplash.com/photo-1674775372047-27fb6492c9a2" />
+                  src="https://images.unsplash.com/photo-1674775372047-27fb6492c9a2"
+                />
               </div>
             </motion.div>
 
@@ -189,7 +164,7 @@ const Contact = () => {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="bg-white rounded-2xl shadow-lg p-8"
+              className="bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-8"
             >
               <h2 className="text-2xl font-bold text-[#1A237E] mb-6">
                 Envíanos un Mensaje
@@ -251,7 +226,7 @@ const Contact = () => {
               </form>
 
               {/* Información adicional */}
-              <div className="mt-8 p-6 bg-gradient-to-br from-[#1A237E]/5 to-[#00C853]/5 rounded-lg">
+              <div className="p-6 bg-gradient-to-br from-[#1A237E]/5 to-[#00C853]/5 rounded-lg">
                 <h3 className="font-semibold text-[#1A237E] mb-2">
                   Tiempo de Respuesta
                 </h3>
@@ -259,6 +234,25 @@ const Contact = () => {
                   Normalmente respondemos en menos de 24 horas durante días hábiles. 
                   Para consultas urgentes, puedes llamarnos directamente.
                 </p>
+              </div>
+              {/* Redes sociales debajo del formulario */}
+              <div>
+                <h3 className="text-xl font-bold text-[#1A237E] mb-4">
+                  Síguenos en Redes Sociales
+                </h3>
+                <div className="flex space-x-4">
+                  {socialLinks.map((social, index) => (
+                    <a
+                      key={index}
+                      href={social.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white p-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 card-hover"
+                    >
+                      <social.icon className="h-6 w-6 text-[#1A237E]" />
+                    </a>
+                  ))}
+                </div>
               </div>
             </motion.div>
           </div>
