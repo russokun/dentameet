@@ -58,8 +58,9 @@ const About = () => {
   return (
     <>
       <Helmet>
-        <title>Nosotros - DentaMeet PacienteFácil | Nuestra misión y visión</title>
-        <meta name="description" content="Conoce más sobre DentaMeet, nuestra misión de facilitar el acceso a la salud bucal y apoyar la formación clínica de estudiantes de odontología." />
+  <title>DentaMeet - PacienteFacil | Tinder Dental</title>
+  <meta name="description" content="Plataforma Digital que conecta estudiantes de odonto y pacientes para tratamientos accesibles y de calidad. ¡Encuentra tu match dental fácil!" />
+  <meta name="keywords" content="Dentameet, Tinder Dental, Paciente Fácil, sobre nosotros, odontología, estudiantes, pacientes, tratamientos dentales, salud bucal" />
       </Helmet>
 
       <div className="min-h-screen bg-gray-50">

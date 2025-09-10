@@ -99,8 +99,9 @@ const Contact = () => {
   return (
     <>
       <Helmet>
-        <title>Contacto - DentaMeet PacienteFácil | Ponte en contacto con nosotros</title>
-        <meta name="description" content="Contáctanos para resolver tus dudas sobre DentaMeet. Estamos aquí para ayudarte a conectar con estudiantes de odontología o encontrar pacientes." />
+  <title>DentaMeet - PacienteFacil | Tinder Dental</title>
+  <meta name="description" content="Plataforma Digital que conecta estudiantes de odonto y pacientes para tratamientos accesibles y de calidad. ¡Encuentra tu match dental fácil!" />
+  <meta name="keywords" content="Dentameet, contacto, Tinder Dental, Paciente Fácil, odontología, estudiantes, pacientes, tratamientos dentales, salud bucal" />
       </Helmet>
 
       <div className="min-h-screen bg-gray-50 py-12">
