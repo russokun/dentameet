@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, Mail, Phone, MapPin, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Heart, Mail, Phone, MapPin, Instagram, Linkedin } from 'lucide-react';
 
 // TikTok icon component (Lucide doesn't have TikTok, so we'll create a custom one)
 const TikTokIcon = ({ className }) => (
@@ -36,9 +36,6 @@ const Footer = () => {
               Facilitamos el acceso a la salud bucal y apoyamos la formación clínica.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-[#00C853] transition-colors">
-                <Facebook className="h-5 w-5" />
-              </a>
               <a href="https://www.instagram.com/pacientefacil/" target="_blank" rel="noopener noreferrer" className="text-gray-300 hover:text-[#00C853] transition-colors">
                 <Instagram className="h-5 w-5" />
               </a>

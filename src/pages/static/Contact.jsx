@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Helmet } from 'react-helmet';
-import { Mail, Phone, MapPin, Send, Facebook, Instagram, Linkedin } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, Instagram, Linkedin } from 'lucide-react';
 
 // TikTok icon component (custom SVG since Lucide doesn't have TikTok)
 const TikTokIcon = ({ className }) => (
@@ -90,10 +90,9 @@ const Contact = () => {
   ];
 
   const socialLinks = [
-  { icon: Facebook, name: 'Facebook', url: '#' },
-  { icon: Instagram, name: 'Instagram', url: 'https://www.instagram.com/pacientefacil/' },
-  { icon: TikTokIcon, name: 'TikTok', url: 'https://www.tiktok.com/@dentameet_pacientefacil' },
-  { icon: Linkedin, name: 'LinkedIn', url: 'https://www.linkedin.com/in/dentameet-pacientef%C3%A1cil-168b51374/?originalSubdomain=cl' }
+    { icon: Instagram, name: 'Instagram', url: 'https://www.instagram.com/pacientefacil/' },
+    { icon: TikTokIcon, name: 'TikTok', url: 'https://www.tiktok.com/@dentameet_pacientefacil' },
+    { icon: Linkedin, name: 'LinkedIn', url: 'https://www.linkedin.com/in/dentameet-pacientef%C3%A1cil-168b51374/?originalSubdomain=cl' }
   ];
 
   return (
