@@ -1,314 +1,253 @@
-import React, { useState } from 'react'
-import { motion } from 'framer-motion'
-import { Eye, EyeOff, Mail, Lock, User, GraduationCap, Phone, MapPin, Loader } from 'lucide-react'
-import { useAuth } from '../../contexts/AuthContext'
-import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Label } from '../../components/ui/label'
-import { toast } from '../../components/ui/use-toast'
+import React, { useState } from "react";
+import { motion } from "framer-motion";
+import { 
+  Eye, 
+  EyeOff, 
+  Mail, 
+  Lock, 
+  User, 
+  GraduationCap, 
+  Phone, 
+  MapPin, 
+  Loader, 
+  ArrowRight,
+  Sparkles,
+  ShieldCheck
+} from "lucide-react";
+import { useAuth } from "../../contexts/AuthContext";
+import { Label } from "../../components/ui/label";
+import { toast } from "../../components/ui/use-toast";
 
 const Register = ({ onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    nombre: '',
-    apellido: '',
-    telefono: '',
-    role: 'paciente'
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  
-  const { signUp } = useAuth()
+    email: "",
+    password: "",
+    confirmPassword: "",
+    nombre: "",
+    apellido: "",
+    telefono: "",
+    role: "paciente",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const { signUp } = useAuth();
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-  }
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
 
   const validateForm = () => {
     if (!formData.email || !formData.password || !formData.confirmPassword || !formData.nombre) {
       toast({
-        title: "Error",
-        description: "Por favor completa todos los campos obligatorios",
-        variant: "destructive"
-      })
-      return false
+        title: "Campos Incompletos",
+        description: "Por favor completa todos los campos obligatorios.",
+        variant: "destructive",
+      });
+      return false;
     }
-
     if (formData.password !== formData.confirmPassword) {
       toast({
-        title: "Error",
-        description: "Las contraseñas no coinciden",
-        variant: "destructive"
-      })
-      return false
+        title: "Error de Contraseña",
+        description: "Las contraseñas no coinciden.",
+        variant: "destructive",
+      });
+      return false;
     }
-
     if (formData.password.length < 6) {
       toast({
-        title: "Error",
-        description: "La contraseña debe tener al menos 6 caracteres",
-        variant: "destructive"
-      })
-      return false
+        title: "Seguridad Baja",
+        description: "La contraseña debe tener al menos 6 caracteres.",
+        variant: "destructive",
+      });
+      return false;
     }
-
-    return true
-  }
+    return true;
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!validateForm()) return
+    e.preventDefault();
+    if (!validateForm()) return;
 
-    setLoading(true)
-    
+    setLoading(true);
     try {
-      console.log('📝 Attempting registration with:', formData.email)
       await signUp(formData.email, formData.password, {
         nombre: formData.nombre,
         apellido: formData.apellido,
         telefono: formData.telefono,
-        role: formData.role
-      })
-      
+        role: formData.role,
+      });
     } catch (error) {
-      console.error('❌ Registration error:', error)
-      // El error ya se maneja en signUp
+      console.error("❌ Registration error:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.4 }}
-      className="w-full max-w-md mx-auto"
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.3 }}
+      className="w-full"
     >
-      {/* Header con iconos de rol */}
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center mb-4">
-          {formData.role === 'paciente' ? (
-            <div className="p-4 bg-green-100 rounded-full">
-              <User className="h-8 w-8 text-green-600" />
-            </div>
-          ) : (
-            <div className="p-4 bg-blue-100 rounded-full">
-              <GraduationCap className="h-8 w-8 text-blue-600" />
-            </div>
-          )}
-        </div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Crear Cuenta
+      <div className="text-center mb-10">
+        <h2 className="text-4xl font-black text-slate-900 mb-2 tracking-tight">
+          Crea tu cuenta.
         </h2>
-        <p className="text-gray-600">
-          Únete a la comunidad DentaMeet como {formData.role}
+        <p className="text-slate-500 font-medium">
+          Únete a la red dental más grande de Chile.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Selector de Rol */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Role Selector */}
         <div className="space-y-3">
-          <Label className="text-sm font-medium text-gray-700">¿Quién eres? *</Label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setFormData(prev => ({ ...prev, role: 'paciente' }))}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                formData.role === 'paciente'
-                  ? 'border-green-500 bg-green-50 text-green-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-green-300'
-              }`}
-              disabled={loading}
-            >
-              <User className="h-5 w-5 mx-auto mb-2" />
-              <span className="text-sm font-medium">Paciente</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setFormData(prev => ({ ...prev, role: 'estudiante' }))}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                formData.role === 'estudiante'
-                  ? 'border-blue-500 bg-blue-50 text-blue-700'
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-blue-300'
-              }`}
-              disabled={loading}
-            >
-              <GraduationCap className="h-5 w-5 mx-auto mb-2" />
-              <span className="text-sm font-medium">Estudiante</span>
-            </button>
+          <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+            Tipo de Perfil
+          </Label>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              { id: "paciente", label: "Paciente", icon: User },
+              { id: "estudiante", label: "Estudiante", icon: GraduationCap },
+            ].map((role) => (
+              <button
+                key={role.id}
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, role: role.id }))}
+                className={`relative p-6 rounded-2xl border-2 transition-all overflow-hidden group ${
+                  formData.role === role.id
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-900 shadow-lg shadow-emerald-500/10"
+                    : "border-slate-100 bg-white text-slate-500 hover:border-emerald-200"
+                }`}
+                disabled={loading}
+              >
+                <role.icon className={`h-8 w-8 mx-auto mb-3 transition-transform ${formData.role === role.id ? "scale-110 text-emerald-600" : "group-hover:scale-110"}`} />
+                <span className="text-sm font-black uppercase tracking-tight">{role.label}</span>
+                {formData.role === role.id && (
+                  <div className="absolute top-2 right-2">
+                    <ShieldCheck className="h-4 w-4 text-emerald-600" />
+                  </div>
+                )}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Nombre */}
-        <div className="space-y-2">
-          <Label htmlFor="nombre" className="flex items-center text-sm font-medium text-gray-700">
-            <User className="h-4 w-4 mr-2" />
-            Nombre *
-          </Label>
-          <Input
-            id="nombre"
-            name="nombre"
-            type="text"
-            value={formData.nombre}
-            onChange={handleInputChange}
-            placeholder="Tu nombre"
-            disabled={loading}
-            required
-            className="transition-all focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Apellido */}
-        <div className="space-y-2">
-          <Label htmlFor="apellido" className="flex items-center text-sm font-medium text-gray-700">
-            <User className="h-4 w-4 mr-2" />
-            Apellido
-          </Label>
-          <Input
-            id="apellido"
-            name="apellido"
-            type="text"
-            value={formData.apellido}
-            onChange={handleInputChange}
-            placeholder="Tu apellido (opcional)"
-            disabled={loading}
-            className="transition-all focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Email */}
-        <div className="space-y-2">
-          <Label htmlFor="email" className="flex items-center text-sm font-medium text-gray-700">
-            <Mail className="h-4 w-4 mr-2" />
-            Email *
-          </Label>
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            value={formData.email}
-            onChange={handleInputChange}
-            placeholder="tu@email.com"
-            disabled={loading}
-            required
-            className="transition-all focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Teléfono */}
-        <div className="space-y-2">
-          <Label htmlFor="telefono" className="flex items-center text-sm font-medium text-gray-700">
-            <Phone className="h-4 w-4 mr-2" />
-            Teléfono
-          </Label>
-          <Input
-            id="telefono"
-            name="telefono"
-            type="tel"
-            value={formData.telefono}
-            onChange={handleInputChange}
-            placeholder="+56 9 1234 5678"
-            disabled={loading}
-            className="transition-all focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-
-        {/* Password */}
-        <div className="space-y-2">
-          <Label htmlFor="password" className="flex items-center text-sm font-medium text-gray-700">
-            <Lock className="h-4 w-4 mr-2" />
-            Contraseña *
-          </Label>
-          <div className="relative">
-            <Input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              value={formData.password}
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nombre</Label>
+            <input
+              name="nombre"
+              type="text"
+              value={formData.nombre}
               onChange={handleInputChange}
-              className="pr-10 transition-all focus:ring-2 focus:ring-blue-500"
-              placeholder="Mínimo 6 caracteres"
-              disabled={loading}
+              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900"
+              placeholder="Ej. Juan"
               required
             />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              disabled={loading}
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Apellido</Label>
+            <input
+              name="apellido"
+              type="text"
+              value={formData.apellido}
+              onChange={handleInputChange}
+              className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900"
+              placeholder="Ej. Pérez"
+            />
           </div>
         </div>
 
-        {/* Confirm Password */}
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword" className="flex items-center text-sm font-medium text-gray-700">
-            <Lock className="h-4 w-4 mr-2" />
-            Confirmar Contraseña *
-          </Label>
+          <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Correo Electrónico</Label>
           <div className="relative">
-            <Input
-              id="confirmPassword"
-              name="confirmPassword"
-              type={showConfirmPassword ? "text" : "password"}
-              value={formData.confirmPassword}
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+            <input
+              name="email"
+              type="email"
+              value={formData.email}
               onChange={handleInputChange}
-              className="pr-10 transition-all focus:ring-2 focus:ring-blue-500"
-              placeholder="Repite tu contraseña"
-              disabled={loading}
+              className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900"
+              placeholder="tu@email.com"
               required
             />
-            <button
-              type="button"
-              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
-              disabled={loading}
-            >
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
           </div>
         </div>
 
-        {/* Submit Button */}
-        <Button
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Contraseña</Label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+              <input
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
+                onChange={handleInputChange}
+                className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900"
+                placeholder="••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-emerald-500"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Confirmar</Label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-300" />
+              <input
+                name="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                value={formData.confirmPassword}
+                onChange={handleInputChange}
+                className="w-full pl-12 pr-12 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900"
+                placeholder="••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-300 hover:text-emerald-500"
+              >
+                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <button
           type="submit"
-          className={`w-full py-3 text-lg font-semibold transition-all ${
-            formData.role === 'paciente' 
-              ? 'bg-green-600 hover:bg-green-700 text-white' 
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
           disabled={loading}
+          className="btn-premium-accent w-full py-5 text-xl group disabled:opacity-50"
         >
           {loading ? (
-            <>
-              <Loader className="mr-2 h-4 w-4 animate-spin" />
-              Creando cuenta...
-            </>
+            <Loader className="h-6 w-6 animate-spin mx-auto" />
           ) : (
-            'Crear Cuenta'
+            <span className="flex items-center justify-center">
+              Registrarme
+              <ArrowRight className="ml-2 h-6 w-6 group-hover:translate-x-1 transition-transform" />
+            </span>
           )}
-        </Button>
+        </button>
 
-        {/* Switch to Login */}
-        <div className="text-center">
-          <p className="text-gray-600">
-            ¿Ya tienes cuenta?{' '}
+        <div className="text-center pt-8 border-t border-slate-50">
+          <p className="text-slate-500 font-medium">
+            ¿Ya eres parte de DentaMeet?{" "}
             <button
               type="button"
               onClick={onSwitchToLogin}
-              className="text-blue-600 hover:text-blue-700 font-medium transition-colors"
+              className="text-emerald-600 hover:text-emerald-700 font-black transition-colors"
               disabled={loading}
             >
               Inicia sesión aquí
@@ -317,7 +256,7 @@ const Register = ({ onSwitchToLogin }) => {
         </div>
       </form>
     </motion.div>
-  )
-}
+  );
+};
 
-export default Register
+export default Register;

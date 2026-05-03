@@ -1,5 +1,5 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider, useAuth } from '../contexts/AuthContext'
 
 // Components
@@ -100,10 +100,30 @@ const RequireAuth = ({ children }) => {
   return user ? children : <Navigate to="/auth" replace />
 }
 
+// Scroll to top/hash on route change
+const ScrollToHash = () => {
+  const { pathname, hash } = useLocation();
+
+  React.useEffect(() => {
+    if (!hash) {
+      window.scrollTo(0, 0);
+    } else {
+      const id = hash.replace('#', '');
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  }, [pathname, hash]);
+
+  return null;
+};
+
 function AppRouter() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToHash />
         <div className="min-h-screen bg-gray-50">
           <Navbar />
           <Routes>

@@ -230,9 +230,8 @@ export const AuthProvider = ({ children }) => {
     const initializeAuth = async () => {
       try {
         console.log('🔄 Inicializando autenticación...')
-        // 1. Obtener sesión actual
         const { data: { session }, error } = await supabase.auth.getSession()
-        console.log('🔄 Estado inicial:', { session, error })
+        
         if (error) {
           console.error('❌ Error obteniendo sesión:', error)
           if (mounted) {
@@ -244,26 +243,15 @@ export const AuthProvider = ({ children }) => {
         }
 
         if (session?.user && mounted) {
-          console.log('✅ Sesión encontrada:', session.user.id)
           setUser(session.user)
-          // 2. Cargar perfil
-          console.log('🔍 Buscando perfil en tabla person para usuario:', session.user.id)
           const profileData = await loadUserProfile(session.user.id)
-          if (mounted) {
-            console.log('📋 Resultado del perfil:', profileData ? 'ENCONTRADO' : 'NO ENCONTRADO', profileData)
-            setProfile(profileData)
-          }
-        } else {
-          console.log('ℹ️ No hay sesión activa')
-          if (mounted) {
-            setUser(null)
-            setProfile(null)
-          }
+          if (mounted) setProfile(profileData)
+        } else if (mounted) {
+          setUser(null)
+          setProfile(null)
         }
-        if (mounted) {
-          console.log('🔄 Estado después de inicialización:', { user, profile, loading })
-          setLoading(false)
-        }
+
+        if (mounted) setLoading(false)
       } catch (error) {
         console.error('❌ Error en inicialización:', error)
         if (mounted) {
@@ -274,46 +262,43 @@ export const AuthProvider = ({ children }) => {
       }
     }
 
-    // 3. Listener para cambios de auth (incluye refresco de token y actualización de usuario)
+    // 3. Listener para cambios de auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Cambio de estado auth:', event, { session })
         if (!mounted) return
+        
         try {
-          const validEvents = [
-            'SIGNED_IN',
-            'TOKEN_REFRESHED',
-            'USER_UPDATED'
-          ]
-          if (validEvents.includes(event) && session?.user) {
-            console.log('✅ Usuario activo (evento:', event, '):', session.user.id)
+          if (session?.user) {
             setUser(session.user)
             const profileData = await loadUserProfile(session.user.id)
-            console.log('📋 Perfil después de evento auth:', profileData ? 'ENCONTRADO' : 'NO ENCONTRADO', profileData)
-            setProfile(profileData)
-          } else if (event === 'SIGNED_OUT') {
-            console.log('ℹ️ Usuario deslogueado')
+            if (mounted) setProfile(profileData)
+          } else {
             setUser(null)
             setProfile(null)
           }
         } catch (error) {
           console.error('❌ Error en auth state change:', error)
         } finally {
-          if (mounted) {
-            console.log('🔄 Estado después de cambio de auth:', { user, profile, loading })
-            setLoading(false)
-          }
+          if (mounted) setLoading(false)
         }
       }
     )
 
-    // Inicializar
+    // 4. Timeout de seguridad
+    const timeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('⚠️ Timeout de seguridad: forzando fin de carga')
+        setLoading(false)
+        if (profile === undefined) setProfile(null)
+      }
+    }, 5000)
+
     initializeAuth()
 
-    // Cleanup
     return () => {
       mounted = false
       subscription?.unsubscribe()
+      clearTimeout(timeout)
     }
   }, [])
 

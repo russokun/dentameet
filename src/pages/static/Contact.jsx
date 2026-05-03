@@ -1,313 +1,263 @@
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { Helmet } from "react-helmet";
+import { 
+  Mail, 
+  Phone, 
+  MapPin, 
+  Send, 
+  Instagram, 
+  Linkedin, 
+  Sparkles, 
+  MessageSquare,
+  HelpCircle,
+  Clock,
+  ArrowRight
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/components/ui/use-toast";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Helmet } from 'react-helmet';
-import { Mail, Phone, MapPin, Send, Instagram, Linkedin } from 'lucide-react';
-
-// TikTok icon component (custom SVG since Lucide doesn't have TikTok)
 const TikTokIcon = ({ className }) => (
-  <svg 
-    className={className} 
-    viewBox="0 0 24 24" 
-    fill="currentColor"
-  >
+  <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.04-.1z"/>
   </svg>
 );
-import { Button } from '@/components/ui/button';
-import { toast } from '@/components/ui/use-toast';
 
 const Contact = () => {
   const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
-    mensaje: ''
+    nombre: "",
+    email: "",
+    mensaje: "",
   });
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) entry.target.classList.add("visible");
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    document.querySelectorAll(".reveal-on-scroll").forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
     if (!formData.nombre || !formData.email || !formData.mensaje) {
       toast({
         title: "Error",
         description: "Por favor completa todos los campos",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    // Guardar mensaje en localStorage
-    const mensajes = JSON.parse(localStorage.getItem('dentameet_mensajes') || '[]');
-    const nuevoMensaje = {
-      ...formData,
-      fecha: new Date().toISOString(),
-      id: Date.now()
-    };
-    
-    mensajes.push(nuevoMensaje);
-    localStorage.setItem('dentameet_mensajes', JSON.stringify(mensajes));
-
     toast({
-      title: "¡Mensaje Enviado!",
-      description: "Gracias por contactarnos. Te responderemos pronto.",
+      title: "¡Mensaje Recibido!",
+      description: "Estamos procesando tu solicitud. Te contactaremos pronto.",
     });
 
-    // Limpiar formulario
-    setFormData({
-      nombre: '',
-      email: '',
-      mensaje: ''
-    });
+    setFormData({ nombre: "", email: "", mensaje: "" });
   };
 
-  const contactInfo = [
-    {
-      icon: Mail,
-      title: 'Correo Electrónico',
-      content: 'info@dentameet.net',
-      description: 'Escríbenos para cualquier consulta'
-    },
-    {
-      icon: Phone,
-      title: 'Teléfono',
-      content: '+56 9 1234 5678',
-      description: 'Lunes a Viernes, 9:00 - 18:00'
-    },
-    {
-      icon: MapPin,
-      title: 'Ubicación',
-      content: 'Santiago, Chile',
-      description: 'Región Metropolitana'
-    }
-  ];
-
-  const socialLinks = [
-    { icon: Instagram, name: 'Instagram', url: 'https://www.instagram.com/pacientefacil/' },
-    { icon: TikTokIcon, name: 'TikTok', url: 'https://www.tiktok.com/@dentameet_pacientefacil' },
-    { icon: Linkedin, name: 'LinkedIn', url: 'https://www.linkedin.com/in/dentameet-pacientef%C3%A1cil-168b51374/?originalSubdomain=cl' }
-  ];
-
   return (
-    <>
+    <div className="bg-white selection:bg-emerald-100">
       <Helmet>
-  <title>DentaMeet - PacienteFacil | Tinder Dental</title>
-  <meta name="description" content="Plataforma Digital que conecta estudiantes de odonto y pacientes para tratamientos accesibles y de calidad. ¡Encuentra tu match dental fácil!" />
-  <meta name="keywords" content="Dentameet, contacto, Tinder Dental, Paciente Fácil, odontología, estudiantes, pacientes, tratamientos dentales, salud bucal" />
+        <title>Contacto | DentaMeet Chile: Estamos para Ayudarte</title>
+        <meta name="description" content="¿Tienes dudas o quieres unirte a la red? Contáctanos y nuestro equipo te responderá en menos de 24 horas." />
       </Helmet>
 
-      <div className="min-h-screen bg-gray-50 py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
+      {/* Header - Simple & Clean */}
+      <section className="relative pt-32 pb-20 bg-slate-950 mesh-gradient overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-16"
+            className="inline-flex items-center px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold mb-8"
           >
-            <h1 className="text-4xl font-bold text-[#1A237E] mb-4">
-              Contáctanos
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              ¿Tienes preguntas sobre DentaMeet? Estamos aquí para ayudarte. 
-              Ponte en contacto con nosotros y te responderemos lo antes posible.
-            </p>
+            <MessageSquare className="h-4 w-4 mr-2" />
+            Canales de Atención Abiertos
           </motion.div>
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight">
+            Hablemos de tu <br />
+            <span className="text-gradient">próximo match.</span>
+          </h1>
+          <p className="text-xl text-slate-400 max-w-2xl mx-auto font-medium">
+            Estamos aquí para resolver tus dudas sobre la plataforma, alianzas o soporte técnico.
+          </p>
+        </div>
+      </section>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            {/* Información de contacto */}
-            <motion.div
-              initial={{ opacity: 0, x: -50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="space-y-8"
-            >
-              <div>
-                <h2 className="text-2xl font-bold text-[#1A237E] mb-6">
-                  Información de Contacto
-                </h2>
-                <div className="space-y-6">
-                  {contactInfo.map((info, index) => (
-                    <div key={index} className="flex items-start space-x-4">
-                      <div className="bg-[#00C853] p-3 rounded-lg">
-                        <info.icon className="h-6 w-6 text-white" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-[#1A237E] mb-1">{info.title}</h3>
-                        <p className="text-lg text-gray-800 mb-1">{info.content}</p>
-                        <p className="text-sm text-gray-600">{info.description}</p>
-                      </div>
-                    </div>
-                  ))}
+      <section className="py-24 relative -mt-10 lg:-mt-20 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+            
+            {/* Info Column */}
+            <div className="lg:col-span-5 space-y-8">
+              <a 
+                href="mailto:contacto@dentameet.net?subject=Contacto%20desde%20la%20Web%20-%20DentaMeet&body=Hola%20equipo%20de%20DentaMeet%20%F0%9F%A6%B7%2C%0A%0AEstoy%20interesado%20en%20comunicarme%20con%20ustedes.%20Mis%20datos%20son%20los%20siguientes%3A%0A%F0%9F%91%A4%20Nombre%3A%0A%F0%9F%93%A7%20Correo%3A%0A%F0%9F%92%AC%20Motivo%20de%20consulta%3A%0A%0AQuedo%20atento%20a%20su%20respuesta.%0ASaludos."
+                className="premium-card group reveal-on-scroll block cursor-pointer"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="p-4 rounded-2xl bg-emerald-500/10 group-hover:scale-110 transition-transform">
+                    <Mail className="h-8 w-8 text-emerald-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Correo Electrónico</h3>
+                    <p className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">contacto@dentameet.net</p>
+                  </div>
+                </div>
+              </a>
+
+              <a 
+                href="https://wa.me/56957384302?text=Hola%20DentaMeet%20%F0%9F%A6%B7%2C%20estoy%20interesado%20en%20comunicarme%20con%20ustedes.%20%F0%9F%93%A9%20Mis%20datos%20son%3A%0A%0A%F0%9F%91%A4%20Nombre%3A%0A%F0%9F%93%A7%20Correo%3A%0A%F0%9F%92%AC%20Motivo%20de%20consulta%3A"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="premium-card group reveal-on-scroll block cursor-pointer"
+              >
+                <div className="flex items-center gap-6">
+                  <div className="p-4 rounded-2xl bg-blue-500/10 group-hover:scale-110 transition-transform">
+                    <Phone className="h-8 w-8 text-blue-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp Soporte</h3>
+                    <p className="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">+56 9 5738 4302</p>
+                  </div>
+                </div>
+              </a>
+
+              <div className="premium-card group reveal-on-scroll">
+                <div className="flex items-center gap-6">
+                  <div className="p-4 rounded-2xl bg-rose-500/10">
+                    <MapPin className="h-8 w-8 text-rose-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Ubicación Central</h3>
+                    <p className="text-2xl font-bold text-slate-900">Viña del Mar, Chile</p>
+                  </div>
                 </div>
               </div>
-              {/* Imagen */}
-              <div className="hidden lg:block">
-                <img
-                  className="rounded-2xl shadow-lg w-full max-h-[500px] object-cover"
-                  alt="Equipo de DentaMeet trabajando"
-                  src="https://images.unsplash.com/photo-1674775372047-27fb6492c9a2"
-                />
-              </div>
-            </motion.div>
 
-            {/* Formulario de contacto */}
-            <motion.div
-              initial={{ opacity: 0, x: 50 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="bg-white rounded-2xl shadow-lg p-8 flex flex-col gap-8"
-            >
-              <h2 className="text-2xl font-bold text-[#1A237E] mb-6">
-                Envíanos un Mensaje
-              </h2>
-              
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nombre Completo *
-                  </label>
-                  <input
-                    type="text"
-                    name="nombre"
-                    value={formData.nombre}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent transition-all duration-300"
-                    placeholder="Tu nombre completo"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Correo Electrónico *
-                  </label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent transition-all duration-300"
-                    placeholder="tu@email.com"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Mensaje *
-                  </label>
-                  <textarea
-                    name="mensaje"
-                    value={formData.mensaje}
-                    onChange={handleInputChange}
-                    rows={6}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent transition-all duration-300 resize-none"
-                    placeholder="Escribe tu mensaje aquí..."
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full btn-secondary py-4 text-lg font-semibold flex items-center justify-center"
-                >
-                  <Send className="mr-2 h-5 w-5" />
-                  Enviar Mensaje
-                </Button>
-              </form>
-
-              {/* Información adicional */}
-              <div className="p-6 bg-gradient-to-br from-[#1A237E]/5 to-[#00C853]/5 rounded-lg">
-                <h3 className="font-semibold text-[#1A237E] mb-2">
-                  Tiempo de Respuesta
-                </h3>
-                <p className="text-sm text-gray-600">
-                  Normalmente respondemos en menos de 24 horas durante días hábiles. 
-                  Para consultas urgentes, puedes llamarnos directamente.
-                </p>
-              </div>
-              {/* Redes sociales debajo del formulario */}
-              <div>
-                <h3 className="text-xl font-bold text-[#1A237E] mb-4">
-                  Síguenos en Redes Sociales
-                </h3>
-                <div className="flex space-x-4">
-                  {socialLinks.map((social, index) => (
-                    <a
-                      key={index}
-                      href={social.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-white p-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 card-hover"
+              <div className="premium-card bg-slate-950 border-none reveal-on-scroll">
+                <h3 className="text-xl font-bold text-white mb-6">Nuestras Redes</h3>
+                <div className="flex gap-4">
+                  {[
+                    { icon: Instagram, url: "https://instagram.com/pacientefacil" },
+                    { icon: TikTokIcon, url: "https://tiktok.com/@dentameet" },
+                    { icon: Linkedin, url: "https://www.linkedin.com/company/pacientef%C3%A1cil/" }
+                  ].map((social, idx) => (
+                    <a 
+                      key={idx} 
+                      href={social.url} 
+                      target="_blank" 
+                      className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-emerald-500 hover:text-white transition-all"
                     >
-                      <social.icon className="h-6 w-6 text-[#1A237E]" />
+                      <social.icon className="h-6 w-6" />
                     </a>
                   ))}
                 </div>
               </div>
-            </motion.div>
-          </div>
+            </div>
 
-          {/* Mapa o información adicional */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="mt-16 bg-white rounded-2xl shadow-lg p-8"
-          >
-            <h2 className="text-2xl font-bold text-[#1A237E] mb-6 text-center">
-              Preguntas Frecuentes
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div>
-                <h3 className="font-semibold text-[#1A237E] mb-2">
-                  ¿Cómo funciona la plataforma?
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Conectamos estudiantes de odontología con pacientes según comuna, 
-                  tratamiento necesario y disponibilidad de ambas partes.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#1A237E] mb-2">
-                  ¿Los tratamientos son seguros?
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Sí, todos los tratamientos son realizados por estudiantes bajo 
-                  supervisión de profesionales calificados en clínicas universitarias.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#1A237E] mb-2">
-                  ¿Cuánto cuestan los tratamientos?
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Los precios varían desde tratamientos gratuitos hasta precios 
-                  muy reducidos, dependiendo del tipo de tratamiento y la universidad.
-                </p>
-              </div>
-              <div>
-                <h3 className="font-semibold text-[#1A237E] mb-2">
-                  ¿Cómo me registro?
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Simplemente ve a la sección de registro, selecciona si eres 
-                  paciente o estudiante, y completa el formulario correspondiente.
-                </p>
+            {/* Form Column */}
+            <div className="lg:col-span-7">
+              <div className="premium-card bg-white shadow-2xl reveal-on-scroll">
+                <div className="mb-10">
+                  <h2 className="text-3xl font-black text-slate-900 mb-2">Envíanos un mensaje</h2>
+                  <p className="text-slate-500 font-medium">Te responderemos en menos de 24 horas hábiles.</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
+                      <input
+                        type="text"
+                        name="nombre"
+                        value={formData.nombre}
+                        onChange={handleInputChange}
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900"
+                        placeholder="Ej. Valentina Rojas"
+                        required
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Correo Electrónico</label>
+                      <input
+                        type="email"
+                        name="email"
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900"
+                        placeholder="tu@email.com"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Tu Mensaje</label>
+                    <textarea
+                      name="mensaje"
+                      value={formData.mensaje}
+                      onChange={handleInputChange}
+                      rows={6}
+                      className="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 resize-none"
+                      placeholder="¿En qué podemos ayudarte?"
+                      required
+                    />
+                  </div>
+
+                  <button type="submit" className="btn-premium-accent w-full py-5 text-xl group">
+                    <Send className="mr-3 h-6 w-6 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
+                    Enviar Consulta
+                  </button>
+                </form>
+                
+                <div className="mt-10 pt-10 border-t border-slate-100 flex items-center gap-4 text-slate-400">
+                  <Clock className="h-5 w-5 text-emerald-500" />
+                  <span className="text-sm font-bold uppercase tracking-widest">Respuesta Promedio: 12 Horas</span>
+                </div>
               </div>
             </div>
-          </motion.div>
+          </div>
         </div>
-      </div>
-    </>
+      </section>
+
+      {/* FAQ Grid - Minimalist */}
+      <section id="faq" className="py-32 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-4 mb-16 reveal-on-scroll">
+            <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
+              <HelpCircle className="h-6 w-6 text-emerald-500" />
+            </div>
+            <h2 className="text-4xl font-black text-slate-900">Preguntas Rápidas</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {[
+              { q: "¿Cómo se gestionan los pagos?", a: "DentaMeet facilita el contacto; el acuerdo económico se realiza directamente en la clínica universitaria según el arancel vigente." },
+              { q: "¿Quién supervisa los tratamientos?", a: "Absolutamente todos los procedimientos son guiados y validados por docentes odontólogos especialistas." },
+              { q: "¿En qué regiones operan?", a: "Nuestra base central está en Viña del Mar (Región de Valparaíso), pero nuestra red de estudiantes y profesionales abarca gran parte de la zona central y Santiago." },
+              { q: "¿Cómo garantizan la seguridad?", a: "Verificamos la identidad de todos los usuarios y mantenemos un sistema de reputación bidireccional." }
+            ].map((faq, idx) => (
+              <div key={idx} className="reveal-on-scroll">
+                <h3 className="text-xl font-black text-slate-900 mb-3">{faq.q}</h3>
+                <p className="text-slate-600 font-medium leading-relaxed">{faq.a}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
   );
 };
 

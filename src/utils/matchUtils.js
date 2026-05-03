@@ -105,16 +105,19 @@ export const areUsersCompatible = (user1, user2) => {
     return false
   }
   
-  // Verificar que estén en la misma región (por ahora solo Santiago)
-  const santiagoComunas = [
+  // Verificar que estén en la misma región (Santiago y Valparaíso)
+  const compatibleComunas = [
+    // Región Metropolitana
     'Santiago', 'Las Condes', 'Providencia', 'Ñuñoa', 'La Reina', 'Vitacura',
-    'Maipú', 'Puente Alto', 'La Florida', 'San Bernardo', 'Peñalolén', 'Quilicura'
+    'Maipú', 'Puente Alto', 'La Florida', 'San Bernardo', 'Peñalolén', 'Quilicura',
+    // Región de Valparaíso
+    'Viña del Mar', 'Valparaíso', 'Quilpué', 'Villa Alemana', 'Concón', 'Casablanca'
   ]
   
-  const user1InSantiago = santiagoComunas.includes(user1.comuna)
-  const user2InSantiago = santiagoComunas.includes(user2.comuna)
+  const user1InZone = compatibleComunas.includes(user1.comuna)
+  const user2InZone = compatibleComunas.includes(user2.comuna)
   
-  return user1InSantiago === user2InSantiago
+  return user1InZone === user2InZone
 }
 
 // Formatear fecha para mostrar
