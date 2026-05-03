@@ -1,25 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet";
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Send, 
-  Instagram, 
-  Linkedin, 
-  Sparkles, 
+import {
+  Mail,
+  Phone,
+  MapPin,
+  Send,
+  Instagram,
+  Linkedin,
+  Sparkles,
   MessageSquare,
   HelpCircle,
   Clock,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 
 const TikTokIcon = ({ className }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
-    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.04-.1z"/>
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-.04-.1z" />
   </svg>
 );
 
@@ -37,10 +37,12 @@ const Contact = () => {
           if (entry.isIntersecting) entry.target.classList.add("visible");
         });
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
-    document.querySelectorAll(".reveal-on-scroll").forEach((el) => observer.observe(el));
+    document
+      .querySelectorAll(".reveal-on-scroll")
+      .forEach((el) => observer.observe(el));
     return () => observer.disconnect();
   }, []);
 
@@ -60,9 +62,21 @@ const Contact = () => {
       return;
     }
 
+    const subject = encodeURIComponent(`Consulta Web DentaMeet - ${formData.nombre}`);
+    const body = encodeURIComponent(
+      `Hola equipo de DentaMeet,\n\n` +
+      `He enviado una consulta a través del sitio web:\n\n` +
+      `👤 Nombre: ${formData.nombre}\n` +
+      `📧 Email: ${formData.email}\n` +
+      `💬 Mensaje: ${formData.mensaje}\n\n` +
+      `Quedo atento a su respuesta.`
+    );
+
+    window.location.href = `mailto:contacto@dentameet.net?subject=${subject}&body=${body}`;
+
     toast({
-      title: "¡Mensaje Recibido!",
-      description: "Estamos procesando tu solicitud. Te contactaremos pronto.",
+      title: "Redirigiendo...",
+      description: "Se abrirá tu cliente de correo para enviar el mensaje.",
     });
 
     setFormData({ nombre: "", email: "", mensaje: "" });
@@ -72,7 +86,10 @@ const Contact = () => {
     <div className="bg-white selection:bg-emerald-100">
       <Helmet>
         <title>Contacto | DentaMeet-PacienteFácil: Estamos para Ayudarte</title>
-        <meta name="description" content="¿Tienes dudas sobre cómo unirte a DentaMeet-PacienteFácil o necesitas soporte técnico? Contáctanos y nuestro equipo de atención dental te responderá a la brevedad." />
+        <meta
+          name="description"
+          content="¿Tienes dudas sobre cómo unirte a DentaMeet-PacienteFácil o necesitas soporte técnico? Contáctanos y nuestro equipo de atención dental te responderá a la brevedad."
+        />
       </Helmet>
 
       {/* Header - Simple & Clean */}
@@ -91,7 +108,8 @@ const Contact = () => {
             <span className="text-gradient">próximo match.</span>
           </h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto font-medium">
-            Estamos aquí para resolver tus dudas sobre la plataforma, alianzas o soporte técnico.
+            ¿Tienes Preguntas sobre DentaMeet? Estamos aquí para resolver tus
+            dudas sobre la plataforma, alianzas o soporte técnico.
           </p>
         </div>
       </section>
@@ -99,10 +117,9 @@ const Contact = () => {
       <section className="py-24 relative -mt-10 lg:-mt-20 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
-            
             {/* Info Column */}
             <div className="lg:col-span-5 space-y-8">
-              <a 
+              <a
                 href="mailto:contacto@dentameet.net?subject=Contacto%20desde%20la%20Web%20-%20DentaMeet&body=Hola%20equipo%20de%20DentaMeet%20%F0%9F%A6%B7%2C%0A%0AEstoy%20interesado%20en%20comunicarme%20con%20ustedes.%20Mis%20datos%20son%20los%20siguientes%3A%0A%F0%9F%91%A4%20Nombre%3A%0A%F0%9F%93%A7%20Correo%3A%0A%F0%9F%92%AC%20Motivo%20de%20consulta%3A%0A%0AQuedo%20atento%20a%20su%20respuesta.%0ASaludos."
                 className="premium-card group reveal-on-scroll block cursor-pointer"
               >
@@ -111,13 +128,17 @@ const Contact = () => {
                     <Mail className="h-8 w-8 text-emerald-500" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Correo Electrónico</h3>
-                    <p className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">contacto@dentameet.net</p>
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">
+                      Correo Electrónico
+                    </h3>
+                    <p className="text-2xl font-bold text-slate-900 group-hover:text-emerald-600 transition-colors">
+                      contacto@dentameet.net
+                    </p>
                   </div>
                 </div>
               </a>
 
-              <a 
+              <a
                 href="https://wa.me/56957384302?text=Hola%20DentaMeet%20%F0%9F%A6%B7%2C%20estoy%20interesado%20en%20comunicarme%20con%20ustedes.%20%F0%9F%93%A9%20Mis%20datos%20son%3A%0A%0A%F0%9F%91%A4%20Nombre%3A%0A%F0%9F%93%A7%20Correo%3A%0A%F0%9F%92%AC%20Motivo%20de%20consulta%3A"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -128,8 +149,12 @@ const Contact = () => {
                     <Phone className="h-8 w-8 text-blue-500" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">WhatsApp Soporte</h3>
-                    <p className="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">+56 9 5738 4302</p>
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">
+                      WhatsApp Soporte
+                    </h3>
+                    <p className="text-2xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                      +56 9 5738 4302
+                    </p>
                   </div>
                 </div>
               </a>
@@ -140,24 +165,36 @@ const Contact = () => {
                     <MapPin className="h-8 w-8 text-rose-500" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">Ubicación Central</h3>
-                    <p className="text-2xl font-bold text-slate-900">Viña del Mar, Chile</p>
+                    <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-1">
+                      Ubicación Central
+                    </h3>
+                    <p className="text-2xl font-bold text-slate-900">
+                      Viña del Mar, Chile
+                    </p>
                   </div>
                 </div>
               </div>
 
               <div className="premium-card bg-slate-950 border-none reveal-on-scroll">
-                <h3 className="text-xl font-bold text-white mb-6">Nuestras Redes</h3>
+                <h3 className="text-xl font-bold text-white mb-6">
+                  Nuestras Redes
+                </h3>
                 <div className="flex gap-4">
                   {[
-                    { icon: Instagram, url: "https://instagram.com/pacientefacil" },
+                    {
+                      icon: Instagram,
+                      url: "https://instagram.com/pacientefacil",
+                    },
                     { icon: TikTokIcon, url: "https://tiktok.com/@dentameet" },
-                    { icon: Linkedin, url: "https://www.linkedin.com/company/pacientef%C3%A1cil/" }
+                    {
+                      icon: Linkedin,
+                      url: "https://www.linkedin.com/company/pacientef%C3%A1cil/",
+                    },
                   ].map((social, idx) => (
-                    <a 
-                      key={idx} 
-                      href={social.url} 
-                      target="_blank" 
+                    <a
+                      key={idx}
+                      href={social.url}
+                      target="_blank"
                       className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400 hover:bg-emerald-500 hover:text-white transition-all"
                     >
                       <social.icon className="h-6 w-6" />
@@ -171,14 +208,20 @@ const Contact = () => {
             <div className="lg:col-span-7">
               <div className="premium-card bg-white shadow-2xl reveal-on-scroll">
                 <div className="mb-10">
-                  <h2 className="text-3xl font-black text-slate-900 mb-2">Envíanos un mensaje</h2>
-                  <p className="text-slate-500 font-medium">Te responderemos en menos de 24 horas hábiles.</p>
+                  <h2 className="text-3xl font-black text-slate-900 mb-2">
+                    Envíanos un mensaje
+                  </h2>
+                  <p className="text-slate-500 font-medium">
+                    Te responderemos en menos de 24 horas hábiles.
+                  </p>
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-8">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Nombre Completo</label>
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+                        Nombre Completo
+                      </label>
                       <input
                         type="text"
                         name="nombre"
@@ -190,7 +233,9 @@ const Contact = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Correo Electrónico</label>
+                      <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+                        Correo Electrónico
+                      </label>
                       <input
                         type="email"
                         name="email"
@@ -204,7 +249,9 @@ const Contact = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">Tu Mensaje</label>
+                    <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-1">
+                      Tu Mensaje
+                    </label>
                     <textarea
                       name="mensaje"
                       value={formData.mensaje}
@@ -216,15 +263,20 @@ const Contact = () => {
                     />
                   </div>
 
-                  <button type="submit" className="btn-premium-accent w-full py-5 text-xl group">
+                  <button
+                    type="submit"
+                    className="btn-premium-accent w-full py-5 text-xl group"
+                  >
                     <Send className="mr-3 h-6 w-6 group-hover:-translate-y-1 group-hover:translate-x-1 transition-transform" />
                     Enviar Consulta
                   </button>
                 </form>
-                
+
                 <div className="mt-10 pt-10 border-t border-slate-100 flex items-center gap-4 text-slate-400">
                   <Clock className="h-5 w-5 text-emerald-500" />
-                  <span className="text-sm font-bold uppercase tracking-widest">Respuesta Promedio: 12 Horas</span>
+                  <span className="text-sm font-bold uppercase tracking-widest">
+                    Respuesta Promedio: 12 Horas
+                  </span>
                 </div>
               </div>
             </div>
@@ -239,19 +291,29 @@ const Contact = () => {
             <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center shadow-sm">
               <HelpCircle className="h-6 w-6 text-emerald-500" />
             </div>
-            <h2 className="text-4xl font-black text-slate-900">Preguntas Rápidas</h2>
+            <h2 className="text-4xl font-black text-slate-900">
+              Preguntas Rápidas
+            </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
             {[
+              { q: "¿Cómo funciona la plataforma?", a: "Conectamos estudiantes de odontología con pacientes según comuna, tratamiento necesario y disponibilidad de ambas partes." },
+              { q: "¿Los tratamientos son seguros?", a: "Sí, todos los tratamientos son realizados por estudiantes bajo supervisión de profesionales calificados en clínicas universitarias." },
+              { q: "¿Cuánto cuestan los tratamientos?", a: "Los precios varían desde tratamientos gratuitos hasta precios muy reducidos, dependiendo del tipo de tratamiento y la universidad." },
+              { q: "¿Cómo me registro?", a: "Simplemente ve a la sección de registro, selecciona si eres paciente o estudiante, y completa el formulario correspondiente." },
               { q: "¿Cómo se gestionan los pagos?", a: "DentaMeet facilita el contacto; el acuerdo económico se realiza directamente en la clínica universitaria según el arancel vigente." },
               { q: "¿Quién supervisa los tratamientos?", a: "Absolutamente todos los procedimientos son guiados y validados por docentes odontólogos especialistas." },
-              { q: "¿En qué regiones operan?", a: "Nuestra base central está en Viña del Mar (Región de Valparaíso), pero nuestra red de estudiantes y profesionales abarca gran parte de la zona central y Santiago." },
-              { q: "¿Cómo garantizan la seguridad?", a: "Verificamos la identidad de todos los usuarios y mantenemos un sistema de reputación bidireccional." }
+              { q: "¿En qué regiones operan?", a: "Nuestra base central está en Viña del Mar (Región de Valparaíso), pero nuestra red abarca gran parte de la zona central y Santiago." },
+              { q: "¿Cómo garantizan la seguridad?", a: "Verificamos la identidad de todos los usuarios y mantenemos un sistema de reputación bidireccional para asegurar la mejor experiencia." }
             ].map((faq, idx) => (
               <div key={idx} className="reveal-on-scroll">
-                <h3 className="text-xl font-black text-slate-900 mb-3">{faq.q}</h3>
-                <p className="text-slate-600 font-medium leading-relaxed">{faq.a}</p>
+                <h3 className="text-xl font-black text-slate-900 mb-3">
+                  {faq.q}
+                </h3>
+                <p className="text-slate-600 font-medium leading-relaxed">
+                  {faq.a}
+                </p>
               </div>
             ))}
           </div>

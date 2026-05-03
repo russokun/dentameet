@@ -247,55 +247,37 @@ const Home = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-24 reveal-on-scroll">
             <h2 className="text-5xl font-black text-slate-900 mb-6 tracking-tight">
-              Ecosistema de Valor Dental
+              ¿Cómo Funciona DentaMeet?
             </h2>
             <p className="text-xl text-slate-600 max-w-3xl mx-auto font-medium">
-              Fusionamos la academia, la práctica clínica y el impacto social en una plataforma intuitiva.
+              Nuestra plataforma utiliza tecnología avanzada para crear conexiones perfectas entre estudiantes y pacientes, garantizando acceso a salud bucal de calidad.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Bento Item 1 - Big */}
-            <div className="md:col-span-2 md:row-span-2 premium-card bg-emerald-600 border-none text-white overflow-hidden group reveal-on-scroll">
-              <div className="relative z-10">
-                <Sparkles className="h-12 w-12 mb-8 text-emerald-200" />
-                <h3 className="text-3xl font-bold mb-6">Matchmaking Inteligente</h3>
-                <p className="text-emerald-50 text-lg mb-8 leading-relaxed">
-                  Algoritmo optimizado para conectar el nivel académico del estudiante con la complejidad del tratamiento requerido, garantizando seguridad y éxito.
-                </p>
-                <div className="flex gap-2">
-                  <div className="px-4 py-2 bg-emerald-500/50 rounded-full text-sm font-bold">Seguridad</div>
-                  <div className="px-4 py-2 bg-emerald-500/50 rounded-full text-sm font-bold">Precisión</div>
-                </div>
-              </div>
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 group-hover:scale-110 transition-transform"></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Pilares de Funcionamiento */}
+            <div className="premium-card group reveal-on-scroll">
+              <Sparkles className="h-12 w-12 mb-8 text-emerald-500" />
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">Conexión Inteligente</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Algoritmo que conecta pacientes y estudiantes según comuna, tratamiento y disponibilidad.
+              </p>
             </div>
 
-            {/* Bento Item 2 */}
-            <div className="md:col-span-2 premium-card reveal-on-scroll">
-              <div className="flex items-start gap-6">
-                <div className="p-4 rounded-2xl bg-blue-50">
-                  <Calendar className="text-blue-600 h-8 w-8" />
-                </div>
-                <div>
-                  <h3 className="text-2xl font-bold text-slate-900 mb-2">Gestión Pro</h3>
-                  <p className="text-slate-600">Agenda, recordatorios y ficha clínica digital en un solo lugar.</p>
-                </div>
-              </div>
+            <div className="premium-card group reveal-on-scroll">
+              <Heart className="h-12 w-12 mb-8 text-blue-500" />
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">Tratamientos Accesibles</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Acceso a tratamientos dentales de calidad a precios reducidos o gratuitos.
+              </p>
             </div>
 
-            {/* Bento Item 3 */}
-            <div className="md:col-span-1 premium-card reveal-on-scroll">
-              <MessageCircle className="text-emerald-500 h-8 w-8 mb-6" />
-              <h3 className="text-xl font-bold mb-2">Chat Directo</h3>
-              <p className="text-slate-500 text-sm">Comunicación fluida entre pares y pacientes.</p>
-            </div>
-
-            {/* Bento Item 4 */}
-            <div className="md:col-span-1 premium-card bg-slate-900 border-none reveal-on-scroll">
-              <Activity className="text-blue-400 h-8 w-8 mb-6" />
-              <h3 className="text-xl font-bold text-white mb-2">KPIs Impacto</h3>
-              <p className="text-slate-400 text-sm">Visualiza tu crecimiento profesional real.</p>
+            <div className="premium-card group reveal-on-scroll">
+              <CheckCircle className="h-12 w-12 mb-8 text-emerald-500" />
+              <h3 className="text-2xl font-bold text-slate-900 mb-4">Formación Clínica</h3>
+              <p className="text-slate-600 leading-relaxed">
+                Apoyo a estudiantes de odontología para completar sus horas clínicas requeridas.
+              </p>
             </div>
           </div>
         </div>
@@ -307,7 +289,7 @@ const Home = () => {
           <div className="bg-slate-950 rounded-[4rem] p-12 lg:p-24 relative overflow-hidden reveal-on-scroll">
             <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px]"></div>
             
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+            <div className="relative z-10 max-w-3xl mx-auto text-center">
               <div>
                 <h2 className="text-5xl font-black text-white mb-8 tracking-tight">
                   Construyendo el Futuro de la Odontología Social
@@ -316,7 +298,7 @@ const Home = () => {
                   Miles de estudiantes y pacientes ya están redefiniendo el cuidado dental. No es solo atención médica, es empoderamiento profesional.
                 </p>
                 
-                <div className="flex items-center gap-8">
+                <div className="flex flex-col items-center gap-8">
                   <div className="flex -space-x-5">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <div key={i} className="w-16 h-16 rounded-full border-4 border-slate-950 bg-slate-800 overflow-hidden ring-2 ring-emerald-500/20">
@@ -324,29 +306,10 @@ const Home = () => {
                       </div>
                     ))}
                   </div>
-                  <div>
-                    <div className="text-white text-2xl font-black">+5,000</div>
-                    <div className="text-slate-500 font-bold uppercase tracking-widest text-xs">Vidas Impactadas</div>
+                  <div className="text-center">
+                    <div className="text-white text-4xl font-black">+5.000</div>
+                    <div className="text-slate-500 font-bold uppercase tracking-widest text-sm mt-2">Vidas Impactadas</div>
                   </div>
-                </div>
-              </div>
-
-              <div className="space-y-6">
-                <div className="glass-card p-8 hover:translate-x-4 transition-transform duration-500 cursor-default">
-                  <div className="flex items-center gap-1 mb-4">
-                    {[1, 2, 3, 4, 5].map(i => <Star key={i} className="h-5 w-5 fill-emerald-400 text-emerald-400" />)}
-                  </div>
-                  <p className="text-white text-lg font-medium mb-4">
-                    "DentaMeet me permitió encontrar pacientes para mis requisitos clínicos de cuarto año en tiempo récord. La interfaz es increíble."
-                  </p>
-                  <div className="text-emerald-400 font-bold">— Dra. Valentina R., Egresada</div>
-                </div>
-                
-                <div className="glass-card p-8 translate-x-12 hover:translate-x-16 transition-transform duration-500 cursor-default hidden md:block opacity-60">
-                  <p className="text-white font-medium mb-4">
-                    "Por fin una plataforma que entiende lo que necesitamos tanto pacientes como alumnos."
-                  </p>
-                  <div className="text-slate-400 font-bold">— Pedro M., Paciente</div>
                 </div>
               </div>
             </div>
@@ -361,7 +324,7 @@ const Home = () => {
             <Sparkles className="h-10 w-10 text-emerald-600" />
           </div>
           <h2 className="text-6xl font-black text-slate-900 mb-8 tracking-tight">
-            ¿Listo para sonreír al futuro?
+            ¡Listo para comenzar?
           </h2>
           <p className="text-2xl text-slate-500 mb-12 font-medium">
             Únete hoy a la red que está humanizando la odontología profesional.
