@@ -94,8 +94,8 @@ const About = () => {
   return (
     <div className="bg-white">
       <Helmet>
-        <title>Sobre Nosotros | DentaMeet: Democratizando la Salud Bucal</title>
-        <meta name="description" content="Conoce la historia, misión y los valores de la plataforma que está transformando la odontología social en Chile." />
+        <title>Nuestra Misión | DentaMeet-PacienteFácil: Salud Dental Humana</title>
+        <meta name="description" content="Descubre cómo DentaMeet-PacienteFácil está democratizando la odontología en Chile. Nuestra misión es conectar talento dental y comunidad para una salud bucal accesible." />
       </Helmet>
 
       {/* Hero Section - Deep Vision */}

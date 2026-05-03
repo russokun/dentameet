@@ -71,8 +71,8 @@ const Contact = () => {
   return (
     <div className="bg-white selection:bg-emerald-100">
       <Helmet>
-        <title>Contacto | DentaMeet Chile: Estamos para Ayudarte</title>
-        <meta name="description" content="¿Tienes dudas o quieres unirte a la red? Contáctanos y nuestro equipo te responderá en menos de 24 horas." />
+        <title>Contacto | DentaMeet-PacienteFácil: Estamos para Ayudarte</title>
+        <meta name="description" content="¿Tienes dudas sobre cómo unirte a DentaMeet-PacienteFácil o necesitas soporte técnico? Contáctanos y nuestro equipo de atención dental te responderá a la brevedad." />
       </Helmet>
 
       {/* Header - Simple & Clean */}

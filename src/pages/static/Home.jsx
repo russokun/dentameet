@@ -116,11 +116,35 @@ const Home = () => {
   return (
     <div className="bg-white selection:bg-emerald-100 selection:text-emerald-900">
       <Helmet>
-        <title>DentaMeet | La Red de Impacto Dental más Grande de Chile</title>
+        <title>DentaMeet-PacienteFácil | La Red Dental más Grande de Chile</title>
         <meta
           name="description"
-          content="Democratizando la salud bucal a través de la tecnología y el networking profesional. Únete a la comunidad de odontólogos y pacientes."
+          content="Encuentra tu match dental en DentaMeet-PacienteFácil. Conectamos a los mejores profesionales con pacientes para tratamientos accesibles, humanos y de alta calidad en todo Chile."
         />
+        <script type="application/ld+json">
+          {`
+            {
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "DentaMeet-PacienteFácil",
+              "alternateName": "DentaMeet",
+              "url": "https://dentameet.net",
+              "logo": "https://dentameet.net/logonb.png",
+              "description": "La red dental más grande de Chile que conecta pacientes y profesionales para una salud bucal accesible.",
+              "address": {
+                "@type": "PostalAddress",
+                "addressLocality": "Viña del Mar",
+                "addressRegion": "Valparaíso",
+                "addressCountry": "CL"
+              },
+              "sameAs": [
+                "https://www.instagram.com/pacientefacil/",
+                "https://www.tiktok.com/@dentameet_pacientefacil",
+                "https://www.linkedin.com/company/pacientef%C3%A1cil/"
+              ]
+            }
+          `}
+        </script>
       </Helmet>
 
       {/* Hero Section - Spatial Design */}
