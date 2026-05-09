@@ -90,9 +90,15 @@ export const AuthProvider = ({ children }) => {
       
       if (error) {
         console.error('❌ Error en login:', error)
+        
+        let errorMessage = error.message;
+        if (error.message === 'Failed to fetch') {
+          errorMessage = "Error de conexión: No se pudo contactar con el servidor. Si estás en un evento, intenta usar tus datos móviles.";
+        }
+
         toast({
           title: "Error al iniciar sesión",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive"
         })
         throw error
@@ -130,9 +136,15 @@ export const AuthProvider = ({ children }) => {
       
       if (error) {
         console.error('❌ Error en registro:', error)
+        
+        let errorMessage = error.message;
+        if (error.message === 'Failed to fetch') {
+          errorMessage = "Error de conexión: No se pudo contactar con el servidor. Si estás en un evento, intenta usar tus datos móviles.";
+        }
+
         toast({
           title: "Error al registrarse",
-          description: error.message,
+          description: errorMessage,
           variant: "destructive"
         })
         throw error
@@ -234,6 +246,13 @@ export const AuthProvider = ({ children }) => {
         
         if (error) {
           console.error('❌ Error obteniendo sesión:', error)
+          if (error.message === 'Failed to fetch') {
+            toast({
+              title: "Problema de Conexión",
+              description: "No se pudo conectar con el servidor. Si el Wi-Fi es inestable, prueba con datos móviles.",
+              variant: "destructive"
+            })
+          }
           if (mounted) {
             setUser(null)
             setProfile(null)
