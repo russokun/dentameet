@@ -5,6 +5,7 @@ import { Sparkles, Heart, ShieldCheck, Zap } from "lucide-react";
 import Login from "./Login";
 import Register from "./Register";
 import { Link } from "react-router-dom";
+import { isSupabaseConfigured } from "@/lib/supabaseClient";
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -87,7 +88,7 @@ const AuthPage = () => {
               </div>
 
               {/* Tabs Container */}
-              <div className="flex bg-slate-100 p-1.5 rounded-2xl mb-10">
+              <div className={`${isSupabaseConfigured ? "flex" : "hidden"} bg-slate-100 p-1.5 rounded-2xl mb-10`}>
                 <button
                   onClick={() => setIsLogin(true)}
                   className={`flex-1 py-3 px-6 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${
@@ -112,7 +113,14 @@ const AuthPage = () => {
 
               {/* Forms with Animation */}
               <AnimatePresence mode="wait">
-                {isLogin ? (
+                {!isSupabaseConfigured ? (
+                  <div key="vitrina" className="rounded-2xl bg-emerald-50 border border-emerald-100 p-6 text-center">
+                    <h3 className="text-lg font-black text-slate-900">Estamos preparando DentaMeet 2.0</h3>
+                    <p className="mt-2 text-sm text-slate-600 leading-relaxed">
+                      Las cuentas están pausadas mientras migramos la plataforma. Síguenos en redes para enterarte cuando reabramos el registro.
+                    </p>
+                  </div>
+                ) : isLogin ? (
                   <Login key="login" onSwitchToRegister={() => setIsLogin(false)} />
                 ) : (
                   <Register key="register" onSwitchToLogin={() => setIsLogin(true)} />

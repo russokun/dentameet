@@ -1,9 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'your-project-url'
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key'
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+// Sin backend configurado la app corre en "modo vitrina": páginas públicas sí, cuentas no.
+// createClient lanza con una URL inválida y dejaba la página en blanco.
+export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey)
+
+export const supabase = createClient(supabaseUrl || 'https://backend-no-configurado.invalid', supabaseAnonKey || 'sin-clave', {
   auth: {
     autoRefreshToken: true,
     persistSession: true,

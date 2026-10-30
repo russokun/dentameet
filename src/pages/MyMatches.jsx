@@ -4,7 +4,7 @@ import { Helmet } from 'react-helmet'
 import { Heart, MessageCircle, Calendar, ArrowLeft, Users } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { MatchService } from '@/services/MatchService'
+import { MatchService } from '@/services/matchService'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
 

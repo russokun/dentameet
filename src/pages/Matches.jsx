@@ -6,7 +6,7 @@ import { Helmet } from 'react-helmet'
 import { Heart, Users, Sparkles, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { MatchService } from '@/services/MatchService'
+import { MatchService } from '@/services/matchService'
 import { StatsService } from '@/services/StatsService'
 import MatchCard from '@/components/matches/MatchCard'
 import MatchModal from '@/components/matches/MatchModal'
@@ -144,8 +144,9 @@ const Matches = () => {
       const result = await MatchService.recordAction(user.id, likedProfile.id, 'liked')
       
       if (result.isMatch) {
-        // ¡Hay match!
-        setMatchedProfile(likedProfile)
+        // ¡Hay match! El mazo no trae el teléfono; tras el match RLS deja leer el perfil completo
+        const fullProfile = await MatchService.getUserById(likedProfile.id).catch(() => null)
+        setMatchedProfile(fullProfile ? { ...likedProfile, ...fullProfile } : likedProfile)
         setShowMatchModal(true)
         
         toast({

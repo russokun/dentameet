@@ -128,8 +128,8 @@ const Home = () => {
               "@type": "Organization",
               "name": "DentaMeet-PacienteFácil",
               "alternateName": "DentaMeet",
-              "url": "https://dentameet.net",
-              "logo": "https://dentameet.net/logonb.png",
+              "url": "https://dentameet-cl.vercel.app",
+              "logo": "https://dentameet-cl.vercel.app/logonb.png",
               "description": "La red dental más grande de Chile que conecta pacientes y profesionales para una salud bucal accesible.",
               "address": {
                 "@type": "PostalAddress",

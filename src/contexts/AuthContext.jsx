@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '@/lib/supabaseClient'
+import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient'
 import { ProfileService } from '@/services/profileService'
 import { toast } from '@/components/ui/use-toast'
 
@@ -237,8 +237,16 @@ export const AuthProvider = ({ children }) => {
 
     // No forzar redirect para no romper SPA; dejar que la app maneje rutas
   useEffect(() => {
+    // Modo vitrina: sin backend no hay sesión que restaurar
+    if (!isSupabaseConfigured) {
+      setUser(null)
+      setProfile(null)
+      setLoading(false)
+      return
+    }
+
     let mounted = true
-    
+
     const initializeAuth = async () => {
       try {
         console.log('🔄 Inicializando autenticación...')
