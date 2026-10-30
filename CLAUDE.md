@@ -8,7 +8,8 @@
 3. `docs/02-benchmark-rea.md`: cómo funcionan los similares (evidencia REA)
 4. `docs/03-requisitos-tecnicos.md`: arquitectura, modelo de datos y checklist de seguridad
 5. `docs/04-roadmap-2-0.md`: bloques, orden y quién hace qué
-6. `supabase/migrations/*.sql`: esquema (no editar migraciones aplicadas; extender con migraciones nuevas)
+6. `docs/05-algoritmo-de-match.md`: cómo se arma el mazo y se ordena el match
+7. `supabase/migrations/*.sql`: esquema (no editar migraciones aplicadas; extender con migraciones nuevas)
 
 ## Stack
 - **1.x (rama `master`):** Vite 7 + React 18 (JS) + Tailwind 3 + Radix + Supabase. Deploy en Vercel, proyecto `dentameet-cl` (equipo `russokuns-projects`), conectado a GitHub: **cada push a `master` despliega a producción**.

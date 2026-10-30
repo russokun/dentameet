@@ -18,7 +18,7 @@ Navegador (móvil) ──► Next.js App Router en Vercel (gru1)
                         └─ pg_cron: expirar casos y recordatorios
 ```
 
-**Estrategia de migración desde 1.x:** mismo repo, rama `v2`. La rama `master` (1.x en vitrina) sigue desplegada hasta que 2.0 la reemplace en el mismo proyecto Vercel. No hay datos que migrar (los backends de 1.x ya no existen). La migración `baseline_v1` sirve para revivir 1.x si se decide reabrirlo; 2.0 parte con migraciones propias.
+**Estrategia de migración desde 1.x:** mismo repo, rama `v2`. La rama `master` (1.x en vitrina) sigue desplegada hasta que 2.0 la reemplace en el mismo proyecto Vercel. Los datos de 1.x están en proyectos Supabase pausados (ver `docs/00-estado-1x.md` §3): se restauran, se revisan y se decide qué migrar. La migración `baseline_v1` documenta el esquema que usa el frontend; 2.0 parte con migraciones propias.
 
 ## 2. Stack
 

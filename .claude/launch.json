@@ -1,0 +1,7 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "dentameet", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev", "--", "--open=false"], "port": 5173 },
+    { "name": "dentameet-demo", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:demo", "--", "--open=false", "--port", "5174"], "port": 5174 }
+  ]
+}

@@ -1,199 +1,179 @@
-import React, { forwardRef, useState, useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Heart, X, Star, MapPin, GraduationCap, User, Sparkles } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
+import React, { forwardRef, useState } from 'react'
+import { motion } from 'framer-motion'
+import { Heart, X, MapPin, GraduationCap, User, Sparkles, Check } from 'lucide-react'
+
+const ROLE = {
+  estudiante: { label: 'Estudiante', icon: GraduationCap },
+  paciente: { label: 'Paciente', icon: User },
+  dentameeter: { label: 'DentaMeeter', icon: Sparkles },
+}
+
+const initials = (p) =>
+  `${(p.nombre || '').trim().charAt(0)}${(p.apellido || '').trim().charAt(0)}`.toUpperCase() || '?'
 
 const MatchCard = forwardRef(({ profile, onLike, onPass, isTopCard = false }, ref) => {
   const [isDragging, setIsDragging] = useState(false)
   const [exitDirection, setExitDirection] = useState(null)
 
-  const getRoleIcon = (role) => {
-    switch (role) {
-      case 'estudiante':
-        return <GraduationCap className="h-4 w-4" />
-      case 'paciente':
-        return <User className="h-4 w-4" />
-      case 'dentameeter':
-        return <Sparkles className="h-4 w-4" />
-      default:
-        return <User className="h-4 w-4" />
-    }
-  }
-
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'estudiante':
-        return 'bg-blue-100 text-blue-800 border-blue-200'
-      case 'paciente':
-        return 'bg-green-100 text-green-800 border-green-200'
-      case 'dentameeter':
-        return 'bg-purple-100 text-purple-800 border-purple-200'
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-200'
-    }
-  }
-
-  const getCompatibilityColor = (score) => {
-    if (score >= 80) return 'text-green-600'
-    if (score >= 60) return 'text-yellow-600'
-    return 'text-gray-600'
-  }
+  const role = ROLE[profile.role] || ROLE.paciente
+  const RoleIcon = role.icon
+  const tags = (profile.role === 'paciente' ? profile.tratamientos_interes : profile.especialidades) || []
+  const shownTags = tags.slice(0, 3)
+  const hiddenTags = tags.length - shownTags.length
+  const score = Number.isFinite(profile.compatibilityScore) ? profile.compatibilityScore : null
 
   const handleLike = () => {
     setExitDirection('right')
-    setTimeout(() => onLike(profile), 300)
+    setTimeout(() => onLike(profile), 250)
   }
 
   const handlePass = () => {
     setExitDirection('left')
-    setTimeout(() => onPass(profile), 300)
+    setTimeout(() => onPass(profile), 250)
   }
 
   const cardVariants = {
-    initial: { 
-      scale: 0.95, 
-      opacity: 0,
-      y: 50
-    },
-    animate: { 
-      scale: isTopCard ? 1 : 0.95,
-      opacity: isTopCard ? 1 : 0.8,
-      y: isTopCard ? 0 : 10,
-      zIndex: isTopCard ? 20 : 10
+    initial: { scale: 0.96, opacity: 0, y: 24 },
+    animate: {
+      scale: isTopCard ? 1 : 0.96,
+      opacity: isTopCard ? 1 : 0.7,
+      y: isTopCard ? 0 : 12,
+      zIndex: isTopCard ? 20 : 10,
+      transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
     },
     exit: {
-      x: exitDirection === 'right' ? 300 : exitDirection === 'left' ? -300 : 0,
+      x: exitDirection === 'right' ? 320 : exitDirection === 'left' ? -320 : 0,
       opacity: 0,
-      rotate: exitDirection === 'right' ? 30 : exitDirection === 'left' ? -30 : 0,
-      transition: { duration: 0.3 }
-    }
+      rotate: exitDirection === 'right' ? 18 : exitDirection === 'left' ? -18 : 0,
+      transition: { duration: 0.25, ease: [0.4, 0, 1, 1] },
+    },
   }
 
   return (
     <motion.div
-  ref={ref}
-      className="absolute inset-0 cursor-grab active:cursor-grabbing"
+      ref={ref}
+      className={`absolute inset-0 ${isTopCard ? 'cursor-grab active:cursor-grabbing touch-pan-y' : ''}`}
       variants={cardVariants}
       initial="initial"
       animate="animate"
       exit="exit"
-      drag={isTopCard ? "x" : false}
-      dragConstraints={{ left: -200, right: 200 }}
+      drag={isTopCard ? 'x' : false}
+      dragConstraints={{ left: 0, right: 0 }}
+      dragElastic={0.9}
       onDragStart={() => setIsDragging(true)}
       onDragEnd={(_, info) => {
         setIsDragging(false)
-        if (Math.abs(info.offset.x) > 100) {
-          if (info.offset.x > 0) {
-            handleLike()
-          } else {
-            handlePass()
-          }
+        if (Math.abs(info.offset.x) > 100 || Math.abs(info.velocity.x) > 600) {
+          if (info.offset.x > 0) handleLike()
+          else handlePass()
         }
       }}
-      whileDrag={{ scale: 1.05, rotate: 5 }}
+      whileDrag={{ rotate: 4 }}
+      aria-hidden={!isTopCard}
     >
-      <div className={`
-        bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden h-full
-        transform transition-all duration-300
-        ${isDragging ? 'shadow-2xl' : 'hover:shadow-lg'}
-        ${!isTopCard ? 'pointer-events-none' : ''}
-      `}>
-        {/* Header con foto y score */}
-        <div className="relative h-2/3 bg-gradient-to-br from-blue-50 to-green-50">
-          {/* Avatar placeholder con gradiente */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#1A237E]/10 to-[#00C853]/10 flex items-center justify-center">
-            <div className="w-32 h-32 bg-white rounded-full shadow-lg flex items-center justify-center">
-              <User className="h-16 w-16 text-gray-400" />
-            </div>
+      <article
+        aria-label={`${profile.nombre || 'Perfil'}, ${role.label.toLowerCase()}`}
+        className={`h-full flex flex-col bg-white rounded-3xl border border-slate-200 overflow-hidden transition-shadow duration-200 ${
+          isDragging ? 'shadow-2xl' : 'shadow-[0_20px_40px_-20px_rgba(15,23,42,0.25)]'
+        } ${!isTopCard ? 'pointer-events-none' : ''}`}
+      >
+        {/* Identidad: sin fotos en 1.x, las iniciales sobre la superficie de marca */}
+        <div className="relative h-56 sm:h-64 shrink-0 bg-slate-950 mesh-gradient flex items-center justify-center overflow-hidden">
+          <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-emerald-500/20 blur-3xl" aria-hidden="true" />
+          <div className="relative h-28 w-28 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
+            <span className="text-4xl font-black tracking-tight text-white">{initials(profile)}</span>
           </div>
 
-          {/* Compatibility Score */}
-          <div className="absolute top-4 right-4">
-            <div className="bg-white/90 backdrop-blur-sm rounded-full px-3 py-1 flex items-center space-x-1">
-              <Star className={`h-4 w-4 ${getCompatibilityColor(profile.compatibilityScore)}`} />
-              <span className={`text-sm font-bold ${getCompatibilityColor(profile.compatibilityScore)}`}>
-                {profile.compatibilityScore}%
+          <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-slate-900">
+            <RoleIcon className="h-3.5 w-3.5 text-emerald-700" aria-hidden="true" />
+            {role.label}
+          </span>
+
+          {score !== null && (
+            <span className="absolute top-4 right-4 rounded-full bg-emerald-500 px-3 py-1 text-xs font-black text-white tabular-nums">
+              {score}% compatible
+            </span>
+          )}
+        </div>
+
+        {/* Información */}
+        <div className="flex-1 min-h-0 p-5 sm:p-6 flex flex-col">
+          <h3 className="text-2xl font-black tracking-tight text-slate-900 truncate">
+            {profile.nombre} {profile.apellido}
+          </h3>
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+            {profile.edad && <span>{profile.edad} años</span>}
+            {profile.comuna && (
+              <span className="inline-flex items-center gap-1">
+                <MapPin className="h-3.5 w-3.5" aria-hidden="true" />
+                {profile.comuna}
               </span>
-            </div>
-          </div>
-
-          {/* Role Badge */}
-          <div className="absolute top-4 left-4">
-            <Badge className={`${getRoleColor(profile.role)} flex items-center space-x-1`}>
-              {getRoleIcon(profile.role)}
-              <span className="capitalize">{profile.role}</span>
-            </Badge>
-          </div>
-        </div>
-
-        {/* Info Section */}
-        <div className="p-6 h-1/3 flex flex-col justify-between">
-          {/* Nombre y edad */}
-          <div>
-            <h3 className="text-2xl font-bold text-gray-900 mb-1">
-              {profile.nombre} {profile.apellido}
-            </h3>
-            <div className="flex items-center space-x-4 text-gray-600 mb-3">
-              {profile.edad && (
-                <span className="text-sm">{profile.edad} años</span>
-              )}
-              {profile.comuna && (
-                <div className="flex items-center space-x-1">
-                  <MapPin className="h-3 w-3" />
-                  <span className="text-sm">{profile.comuna}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Universidad para estudiantes */}
-            {profile.universidad && (
-              <p className="text-sm text-gray-700 mb-2">
-                <span className="font-medium">📚 {profile.universidad}</span>
-                {profile.etapa_formacion && (
-                  <span className="text-gray-500"> • {profile.etapa_formacion}</span>
-                )}
-              </p>
             )}
+          </p>
 
-            {/* Especialidades o tratamientos */}
-            <div className="flex flex-wrap gap-1">
-              {(profile.especialidades || profile.tratamientos_interes)?.slice(0, 3).map((item, index) => (
-                <Badge key={index} variant="outline" className="text-xs">
-                  {item}
-                </Badge>
+          {profile.universidad && (
+            <p className="mt-3 flex items-start gap-2 text-sm text-slate-700">
+              <GraduationCap className="h-4 w-4 mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />
+              <span>
+                <span className="font-semibold">{profile.universidad}</span>
+                {profile.etapa_formacion && <span className="text-slate-600"> · {profile.etapa_formacion}</span>}
+              </span>
+            </p>
+          )}
+
+          {profile.descripcion && (
+            <p className="mt-3 text-sm leading-relaxed text-slate-600 line-clamp-2">{profile.descripcion}</p>
+          )}
+
+          {profile.matchReasons?.length > 0 && (
+            <ul className="mt-3 space-y-1" aria-label="Por qué aparece">
+              {profile.matchReasons.slice(0, 3).map((reason) => (
+                <li key={reason} className="flex items-start gap-1.5 text-sm font-semibold text-emerald-800">
+                  <Check className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
+                  {reason}
+                </li>
               ))}
-              {(profile.especialidades?.length > 3 || profile.tratamientos_interes?.length > 3) && (
-                <Badge variant="outline" className="text-xs text-gray-500">
-                  +{((profile.especialidades || []).length + (profile.tratamientos_interes || []).length) - 3} más
-                </Badge>
-              )}
-            </div>
-          </div>
+            </ul>
+          )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-center space-x-4 mt-4">
-            <Button
+          {shownTags.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-1.5" aria-label={profile.role === 'paciente' ? 'Tratamientos que busca' : 'Especialidades'}>
+              {shownTags.map((item) => (
+                <li key={item} className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700">
+                  {item}
+                </li>
+              ))}
+              {hiddenTags > 0 && (
+                <li className="rounded-full px-2 py-1 text-xs font-semibold text-slate-600">+{hiddenTags} más</li>
+              )}
+            </ul>
+          )}
+
+          {/* Acciones */}
+          <div className="mt-auto pt-5 flex justify-center gap-6">
+            <button
+              type="button"
               onClick={handlePass}
-              size="lg"
-              variant="outline"
-              className="w-16 h-16 rounded-full border-2 border-red-200 hover:border-red-300 hover:bg-red-50 group"
+              aria-label={`Pasar a ${profile.nombre || 'este perfil'}`}
+              className="h-16 w-16 rounded-full border-2 border-slate-200 bg-white text-slate-500 flex items-center justify-center hover:border-rose-300 hover:text-rose-600 hover:bg-rose-50 active:scale-95 transition-[background-color,border-color,color,transform] duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-500/30"
             >
-              <X className="h-6 w-6 text-red-500 group-hover:text-red-600 transition-colors" />
-            </Button>
-            
-            <Button
+              <X className="h-7 w-7" aria-hidden="true" />
+            </button>
+            <button
+              type="button"
               onClick={handleLike}
-              size="lg"
-              className="w-16 h-16 rounded-full bg-gradient-to-r from-[#00C853] to-[#4CAF50] hover:from-[#00B04F] hover:to-[#45A049] shadow-lg group"
+              aria-label={`Dar like a ${profile.nombre || 'este perfil'}`}
+              className="h-16 w-16 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-[0_10px_24px_-8px_rgba(5,150,105,0.6)] hover:bg-emerald-700 active:scale-95 transition-[background-color,transform] duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/40"
             >
-              <Heart className="h-6 w-6 text-white group-hover:scale-110 transition-transform" />
-            </Button>
+              <Heart className="h-7 w-7" fill="currentColor" aria-hidden="true" />
+            </button>
           </div>
         </div>
-      </div>
+      </article>
     </motion.div>
   )
 })
+
+MatchCard.displayName = 'MatchCard'
 
 export default MatchCard

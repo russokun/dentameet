@@ -1,75 +1,84 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
-import { motion, useInView } from "framer-motion";
 import { Helmet } from "react-helmet";
 import {
-  Users,
   Heart,
   Star,
   ArrowRight,
-  CheckCircle,
-  TrendingUp,
-  Sparkles,
   ShieldCheck,
   MapPin,
-  Calendar,
   MessageCircle,
-  Activity,
+  GraduationCap,
+  Lock,
+  Building2,
+  Stethoscope,
 } from "lucide-react";
-import { animate, createTimeline } from "animejs";
+import { motion, useReducedMotion } from "framer-motion";
+import MatchDeck from "../../components/home/MatchDeck";
 
-const StatNumber = ({ value }) => {
-  const ref = useRef(null);
-  const isInView = useInView(ref, { once: true });
+// Solo afirmaciones verificables: sin cifras de impacto hasta tener datos del piloto
+const facts = [
+  { term: "Gratis para pacientes", detail: "Crear tu perfil y hacer match no cuesta nada.", icon: Heart },
+  { term: "Supervisión docente", detail: "Los estudiantes atienden bajo supervisión de su facultad.", icon: ShieldCheck },
+  { term: "Cerca de ti", detail: "Matches según tu región y comuna, en las 16 regiones.", icon: MapPin },
+  { term: "Contacto directo", detail: "Tras el match coordinan por WhatsApp.", icon: MessageCircle },
+];
 
-  useEffect(() => {
-    if (isInView && ref.current) {
-      const numericValue = parseInt(value.replace(/[^0-9]/g, ""));
-      const obj = { n: 0 };
-      
-      animate(obj, {
-        n: numericValue,
-        duration: 1500,
-        ease: "outExpo",
-        onUpdate: () => {
-          if (ref.current) {
-            ref.current.innerText = Math.round(obj.n).toLocaleString('es-CL');
-          }
-        }
-      });
-    }
-  }, [isInView, value]);
+const paths = [
+  {
+    title: "Si buscas tratamiento",
+    icon: Heart,
+    surface: "bg-white border border-slate-200",
+    iconBg: "bg-emerald-50",
+    iconColor: "text-emerald-600",
+    titleColor: "text-slate-900",
+    bodyColor: "text-slate-600",
+    stepBadge: "bg-emerald-50 text-emerald-700",
+    steps: [
+      { title: "Crea tu perfil", detail: "Cuéntanos qué tratamiento necesitas, tu comuna y tus horarios." },
+      { title: "Haz match", detail: "Te mostramos estudiantes de odontología de tu zona que trabajan ese tratamiento." },
+      { title: "Agenda tu hora", detail: "Coordinan por WhatsApp y te atiendes en la clínica de su universidad." },
+    ],
+  },
+  {
+    title: "Si estudias odontología",
+    icon: GraduationCap,
+    surface: "bg-slate-900",
+    iconBg: "bg-white/10",
+    iconColor: "text-emerald-400",
+    titleColor: "text-white",
+    bodyColor: "text-slate-300",
+    stepBadge: "bg-white/10 text-emerald-300",
+    steps: [
+      { title: "Arma tu perfil clínico", detail: "Universidad, año de formación, especialidades y horarios disponibles." },
+      { title: "Encuentra pacientes", detail: "Personas que necesitan justo los tratamientos que te faltan para tus ramos." },
+      { title: "Atiende con respaldo", detail: "La atención ocurre en tu clínica universitaria, con supervisión docente." },
+    ],
+  },
+];
 
-  return (
-    <span ref={ref} className="tabular-nums">
-      0
-    </span>
-  );
+const safeguards = [
+  { title: "Tu teléfono no es público", detail: "Solo se comparte con la otra persona cuando ambos hacen match.", icon: Lock },
+  { title: "Atención en clínicas universitarias", detail: "El tratamiento se hace en la clínica de la facultad, no en un lugar particular.", icon: Building2 },
+  { title: "Supervisión de un docente", detail: "Cada estudiante atiende bajo la supervisión de su universidad.", icon: ShieldCheck },
+  { title: "Opiniones después de cada cita", detail: "Pacientes y estudiantes se evalúan para cuidar a la comunidad.", icon: Star },
+];
+
+const heroStagger = { hidden: {}, show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } } };
+const heroItem = {
+  hidden: { opacity: 0, y: 24 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] } },
 };
 
 const Home = () => {
-  useEffect(() => {
-    // Orquestación inicial con Anime.js v4
-    const tl = createTimeline({
-      defaults: { 
-        ease: "outExpo", 
-        duration: 1200 
-      }
-    });
+  const reduce = useReducedMotion();
 
-    tl.add(".hero-content > *", {
-      translateY: [40, 0],
-      opacity: [0, 1],
-      delay: (el, i) => i * 150,
-    })
-    .add(".hero-visual", {
-      scale: [0.9, 1],
-      opacity: [0, 1],
-    }, "-=1000")
-    .add(".hero-badge", {
-      translateY: [-20, 0],
-      opacity: [0, 1],
-    }, "-=1200");
+  useEffect(() => {
+    // Con movimiento reducido, las secciones aparecen de inmediato
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.querySelectorAll(".reveal-on-scroll").forEach((el) => el.classList.add("visible"));
+      return;
+    }
 
     // Intersection Observer para revelado premium
     const observer = new IntersectionObserver(
@@ -87,39 +96,13 @@ const Home = () => {
     return () => observer.disconnect();
   }, []);
 
-  const stats = [
-    {
-      number: "14000",
-      suffix: "+",
-      label: "Pacientes Impactados",
-      icon: Users,
-      color: "text-emerald-500",
-      bg: "bg-emerald-500/10",
-    },
-    {
-      number: "40",
-      suffix: "%",
-      label: "Optimización de Agenda",
-      icon: TrendingUp,
-      color: "text-blue-500",
-      bg: "bg-blue-500/10",
-    },
-    {
-      number: "0",
-      label: "Costo de Adhesión",
-      icon: Heart,
-      color: "text-rose-500",
-      bg: "bg-rose-500/10",
-    },
-  ];
-
   return (
     <div className="bg-white selection:bg-emerald-100 selection:text-emerald-900">
       <Helmet>
-        <title>DentaMeet-PacienteFácil | La Red Dental más Grande de Chile</title>
+        <title>DentaMeet-PacienteFácil | Tratamientos dentales accesibles con estudiantes de odontología</title>
         <meta
           name="description"
-          content="Encuentra tu match dental en DentaMeet-PacienteFácil. Conectamos a los mejores profesionales con pacientes para tratamientos accesibles, humanos y de alta calidad en todo Chile."
+          content="Encuentra tu match dental en DentaMeet-PacienteFácil. Conectamos a pacientes que buscan tratamientos accesibles con estudiantes de odontología que atienden con supervisión docente en Chile."
         />
         <script type="application/ld+json">
           {`
@@ -130,7 +113,7 @@ const Home = () => {
               "alternateName": "DentaMeet",
               "url": "https://dentameet-cl.vercel.app",
               "logo": "https://dentameet-cl.vercel.app/logonb.png",
-              "description": "La red dental más grande de Chile que conecta pacientes y profesionales para una salud bucal accesible.",
+              "description": "Plataforma chilena que conecta pacientes que buscan tratamientos dentales accesibles con estudiantes de odontología.",
               "address": {
                 "@type": "PostalAddress",
                 "addressLocality": "Viña del Mar",
@@ -147,187 +130,164 @@ const Home = () => {
         </script>
       </Helmet>
 
-      {/* Hero Section - Spatial Design */}
-      <section className="relative min-h-screen flex items-center pt-20 bg-slate-950 overflow-hidden mesh-gradient">
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-emerald-500/5 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px]"></div>
-          
-          {/* Spatial Grid */}
-          <div 
-            className="absolute inset-0 opacity-[0.15] mix-blend-overlay"
-            style={{ 
-              backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` 
-            }}
-          ></div>
+      {/* Hero partido: cada mitad es un lado del match; el mazo de casos vive en la costura */}
+      <section aria-label="Presentación" className="relative overflow-hidden bg-slate-950">
+        <div className="grid grid-cols-1 lg:grid-cols-2 lg:min-h-[100svh]">
+          {/* Pacientes */}
+          <div className="relative bg-emerald-400 text-slate-950 px-4 sm:px-8 lg:pl-[max(2rem,calc((100vw-80rem)/2+2rem))] lg:pr-[13.5rem] pt-32 pb-14 lg:pt-36 lg:pb-20 flex flex-col justify-center">
+            <motion.div variants={heroStagger} initial={reduce ? false : "hidden"} animate="show" className="max-w-xl">
+              <motion.h1 variants={heroItem} className="text-[2.75rem] sm:text-6xl xl:text-7xl font-black leading-[0.95] tracking-[-0.035em] text-balance">
+                Tratamiento dental accesible.
+              </motion.h1>
+              <motion.p variants={heroItem} className="mt-6 text-lg sm:text-xl leading-relaxed font-medium max-w-md">
+                Estudiantes de odontología te atienden en la clínica de su universidad, con supervisión docente. Crear tu perfil es gratis.
+              </motion.p>
+              <motion.div variants={heroItem} className="mt-9">
+                <Link
+                  to="/auth?rol=paciente"
+                  className="group inline-flex items-center gap-2 min-h-[56px] px-7 rounded-full bg-slate-950 text-white text-lg font-bold hover:bg-slate-800 active:scale-[0.98] transition-[background-color,transform] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-slate-950/30"
+                >
+                  Busco tratamiento
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                </Link>
+              </motion.div>
+            </motion.div>
+          </div>
+
+          {/* Estudiantes */}
+          <div className="relative text-white px-4 sm:px-8 lg:pr-[max(2rem,calc((100vw-80rem)/2+2rem))] lg:pl-[13.5rem] pt-12 pb-16 lg:pt-36 lg:pb-20 flex flex-col justify-center">
+            {/* En móvil el mazo abre la mitad oscura; en escritorio se monta sobre la costura */}
+            <div className="lg:hidden mb-14">
+              <MatchDeck />
+            </div>
+            <motion.div variants={heroStagger} initial={reduce ? false : "hidden"} animate="show" className="max-w-xl lg:ml-auto">
+              <motion.h2 variants={heroItem} className="text-[2.75rem] sm:text-6xl xl:text-7xl font-black leading-[0.95] tracking-[-0.035em] text-balance">
+                Pacientes para tus ramos.
+              </motion.h2>
+              <motion.p variants={heroItem} className="mt-6 text-lg sm:text-xl leading-relaxed font-medium text-slate-300 max-w-md">
+                Encuentra personas que necesitan justo los tratamientos que te faltan, cerca de tu clínica.
+              </motion.p>
+              <motion.div variants={heroItem} className="mt-9">
+                <Link
+                  to="/auth?rol=estudiante"
+                  className="group inline-flex items-center gap-2 min-h-[56px] px-7 rounded-full bg-emerald-400 text-slate-950 text-lg font-bold hover:bg-emerald-300 active:scale-[0.98] transition-[background-color,transform] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300/50"
+                >
+                  Soy estudiante
+                  <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                </Link>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
-            <div className="lg:col-span-7 hero-content">
-              <div className="hero-badge inline-flex items-center px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold mb-8 opacity-0">
-                <Sparkles className="h-4 w-4 mr-2" />
-                Impacto Social & Tecnología Dental
-              </div>
-
-              <h1 className="text-6xl md:text-8xl font-black text-white mb-8 leading-[1.1] tracking-tight opacity-0">
-                Matches que <br />
-                <span className="text-gradient">transforman vidas.</span>
-              </h1>
-
-              <p className="text-xl text-slate-400 mb-12 max-w-xl leading-relaxed opacity-0">
-                DentaMeet es el puente entre el talento odontológico emergente y una comunidad que merece atención de alta calidad, accesible y humana.
-              </p>
-
-              <div className="flex flex-col sm:flex-row gap-6 opacity-0">
-                <Link to="/auth" className="btn-premium-accent group">
-                  Unirse a la Red
-                  <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
-                </Link>
-                <Link to="/about" className="btn-premium-glass">
-                  Conocer el Modelo
-                </Link>
-              </div>
-            </div>
-
-            <div className="lg:col-span-5 hero-visual opacity-0 hidden lg:block perspective-1000">
-              <div className="relative rotate-3 hover:rotate-0 transition-transform duration-700">
-                <div className="glass-card p-4 float-slow">
-                  <img
-                    src="https://images.unsplash.com/photo-1629909613638-0e4a1fad8f81?auto=format&fit=crop&q=80&w=1000"
-                    alt="Odontología de Vanguardia"
-                    className="rounded-2xl shadow-2xl w-full h-[500px] object-cover"
-                  />
-                  
-                  {/* Floating Action Card */}
-                  <div className="absolute -bottom-10 -left-10 glass-card-light p-6 w-64 reveal-on-scroll visible">
-                    <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center">
-                        <CheckCircle className="text-emerald-600 h-6 w-6" />
-                      </div>
-                      <div>
-                        <div className="text-slate-900 font-bold">Match Exitoso</div>
-                        <div className="text-slate-500 text-xs">Hace 2 minutos</div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-slate-600 font-medium italic">
-                      "Excelente atención, calidad profesional increíble."
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Mazo sobre la costura (escritorio) */}
+        <div className="hidden lg:flex absolute inset-y-0 left-1/2 -translate-x-1/2 w-[340px] items-center pt-16 z-10">
+          <motion.div
+            className="w-full"
+            initial={reduce ? false : { opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <MatchDeck />
+          </motion.div>
         </div>
       </section>
 
-      {/* Stats Section - Data visualization */}
-      <section className="py-32 bg-white relative">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
-            {stats.map((stat, index) => (
-              <div key={index} className="premium-card group reveal-on-scroll">
-                <div className={`p-4 rounded-2xl ${stat.bg} w-fit mb-8 group-hover:scale-110 transition-transform`}>
-                  <stat.icon className={`h-10 w-10 ${stat.color}`} />
+      {/* Facts strip: only verifiable claims */}
+      <section className="bg-white border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-6">
+            {facts.map((fact) => (
+              <div key={fact.term} className="flex items-start gap-3">
+                <fact.icon className="h-5 w-5 mt-0.5 shrink-0 text-emerald-600" aria-hidden="true" />
+                <div>
+                  <dt className="text-base font-bold text-slate-900">{fact.term}</dt>
+                  <dd className="text-sm text-slate-600 leading-snug">{fact.detail}</dd>
                 </div>
-                <div className="text-5xl font-black text-slate-900 mb-3 tracking-tighter">
-                  <StatNumber value={stat.number} />
-                  {stat.suffix}
-                </div>
-                <p className="text-lg text-slate-500 font-semibold">{stat.label}</p>
               </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
+      {/* How it works: one path per side of the match */}
+      <section id="como-funciona" className="py-24 lg:py-32 bg-slate-50 scroll-mt-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-3xl mb-14 reveal-on-scroll">
+            <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-6 tracking-tight text-balance">
+              Dos necesidades, un mismo match.
+            </h2>
+            <p className="text-lg md:text-xl text-slate-600 font-medium leading-relaxed">
+              Hay personas que necesitan tratamiento y no pueden pagar una consulta privada, y estudiantes que necesitan pacientes para aprobar sus ramos clínicos. DentaMeet los junta.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+            {paths.map((path) => (
+              <article key={path.title} className={`rounded-[2rem] p-7 md:p-10 reveal-on-scroll ${path.surface}`}>
+                <div className="flex items-center gap-3 mb-8">
+                  <span className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${path.iconBg}`}>
+                    <path.icon className={`h-6 w-6 ${path.iconColor}`} aria-hidden="true" />
+                  </span>
+                  <h3 className={`text-2xl font-black tracking-tight ${path.titleColor}`}>{path.title}</h3>
+                </div>
+                <ol className="space-y-6">
+                  {path.steps.map((step, i) => (
+                    <li key={step.title} className="grid grid-cols-[2.5rem_1fr] gap-4">
+                      <span className={`flex h-10 w-10 items-center justify-center rounded-full text-sm font-black tabular-nums ${path.stepBadge}`}>
+                        {i + 1}
+                      </span>
+                      <div>
+                        <p className={`font-bold ${path.titleColor}`}>{step.title}</p>
+                        <p className={`mt-1 leading-relaxed ${path.bodyColor}`}>{step.detail}</p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Bento Grid Features - The Ecosystem */}
-      <section className="py-32 bg-slate-50 overflow-hidden">
+      {/* Trust: how safety works, stated plainly */}
+      <section className="py-24 lg:py-32 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-24 reveal-on-scroll">
-            <h2 className="text-5xl font-black text-slate-900 mb-6 tracking-tight">
-              ¿Cómo Funciona DentaMeet?
-            </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto font-medium">
-              Nuestra plataforma utiliza tecnología avanzada para crear conexiones perfectas entre estudiantes y pacientes, garantizando acceso a salud bucal de calidad.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Pilares de Funcionamiento */}
-            <div className="premium-card group reveal-on-scroll">
-              <Sparkles className="h-12 w-12 mb-8 text-emerald-500" />
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Conexión Inteligente</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Algoritmo que conecta pacientes y estudiantes según comuna, tratamiento y disponibilidad.
-              </p>
-            </div>
-
-            <div className="premium-card group reveal-on-scroll">
-              <Heart className="h-12 w-12 mb-8 text-blue-500" />
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Tratamientos Accesibles</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Acceso a tratamientos dentales de calidad a precios reducidos o gratuitos.
-              </p>
-            </div>
-
-            <div className="premium-card group reveal-on-scroll">
-              <CheckCircle className="h-12 w-12 mb-8 text-emerald-500" />
-              <h3 className="text-2xl font-bold text-slate-900 mb-4">Formación Clínica</h3>
-              <p className="text-slate-600 leading-relaxed">
-                Apoyo a estudiantes de odontología para completar sus horas clínicas requeridas.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Social Proof - Trust Layer */}
-      <section className="py-32 bg-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-slate-950 rounded-[4rem] p-12 lg:p-24 relative overflow-hidden reveal-on-scroll">
-            <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[100px]"></div>
-            
-            <div className="relative z-10 max-w-3xl mx-auto text-center">
-              <div>
-                <h2 className="text-5xl font-black text-white mb-8 tracking-tight">
-                  Construyendo el Futuro de la Odontología Social
+          <div className="bg-slate-950 rounded-[2.5rem] lg:rounded-[3.5rem] p-8 md:p-14 lg:p-20 relative overflow-hidden reveal-on-scroll">
+            <div className="absolute -top-32 -right-32 w-[420px] h-[420px] bg-emerald-500/10 rounded-full blur-[100px]" aria-hidden="true"></div>
+            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16">
+              <div className="lg:col-span-5">
+                <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight text-balance">
+                  Tu confianza va primero.
                 </h2>
-                <p className="text-slate-400 text-xl mb-12 leading-relaxed font-medium">
-                  Miles de estudiantes y pacientes ya están redefiniendo el cuidado dental. No es solo atención médica, es empoderamiento profesional.
+                <p className="mt-6 text-lg text-slate-300 leading-relaxed">
+                  Que te atienda un estudiante genera preguntas. Así funciona la seguridad en DentaMeet.
                 </p>
-                
-                <div className="flex flex-col items-center gap-8">
-                  <div className="flex -space-x-5">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <div key={i} className="w-16 h-16 rounded-full border-4 border-slate-950 bg-slate-800 overflow-hidden ring-2 ring-emerald-500/20">
-                        <img src={`https://i.pravatar.cc/150?u=${i + 10}`} alt="user" />
-                      </div>
-                    ))}
-                  </div>
-                  <div className="text-center">
-                    <div className="text-white text-4xl font-black">+5.000</div>
-                    <div className="text-slate-500 font-bold uppercase tracking-widest text-sm mt-2">Vidas Impactadas</div>
-                  </div>
-                </div>
               </div>
+              <ul className="lg:col-span-7 divide-y divide-white/10">
+                {safeguards.map((item) => (
+                  <li key={item.title} className="flex gap-4 py-5 first:pt-0 last:pb-0">
+                    <item.icon className="h-6 w-6 mt-0.5 shrink-0 text-emerald-400" aria-hidden="true" />
+                    <div>
+                      <p className="font-bold text-white">{item.title}</p>
+                      <p className="mt-1 text-slate-300 leading-relaxed">{item.detail}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           </div>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section className="py-40 relative">
+      <section className="py-24 lg:py-32 relative">
         <div className="max-w-4xl mx-auto px-4 text-center reveal-on-scroll">
-          <div className="w-20 h-20 bg-emerald-100 rounded-3xl flex items-center justify-center mx-auto mb-10 rotate-12">
-            <Sparkles className="h-10 w-10 text-emerald-600" />
-          </div>
-          <h2 className="text-6xl font-black text-slate-900 mb-8 tracking-tight">
+          <h2 className="text-4xl md:text-6xl font-black text-slate-900 mb-8 tracking-tight">
             ¡Listo para comenzar?
           </h2>
-          <p className="text-2xl text-slate-500 mb-12 font-medium">
-            Únete hoy a la red que está humanizando la odontología profesional.
+          <p className="text-xl md:text-2xl text-slate-600 mb-12 font-medium">
+            Crea tu perfil gratis, como paciente o como estudiante.
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link to="/auth" className="btn-premium-accent text-xl px-12 py-5">

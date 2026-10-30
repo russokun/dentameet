@@ -23,7 +23,7 @@ const LoadingSpinner = ({ size = 'default', message = 'Cargando...' }) => {
         className="mb-4"
       >
         <Heart 
-          className={`${sizeClasses[size]} text-[#00C853]`} 
+          className={`${sizeClasses[size]} text-emerald-700`} 
           fill="currentColor" 
         />
       </motion.div>

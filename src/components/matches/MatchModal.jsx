@@ -15,6 +15,14 @@ const MatchModal = ({ isVisible, matchedProfile, onClose, onSendMessage }) => {
     }
   }, [isVisible])
 
+  // Escape cierra el modal
+  useEffect(() => {
+    if (!isVisible) return
+    const onKey = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [isVisible, onClose])
+
   // Confetti component
   const Confetti = () => (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">
@@ -44,9 +52,9 @@ const MatchModal = ({ isVisible, matchedProfile, onClose, onSendMessage }) => {
           ) : i % 4 === 1 ? (
             <Sparkles className="h-4 w-4 text-yellow-400" fill="currentColor" />
           ) : i % 4 === 2 ? (
-            <div className="w-2 h-2 bg-[#00C853] rounded-full" />
+            <div className="w-2 h-2 bg-emerald-600 rounded-full" />
           ) : (
-            <div className="w-2 h-2 bg-[#1A237E] rounded-full" />
+            <div className="w-2 h-2 bg-slate-900 rounded-full" />
           )}
         </motion.div>
       ))}
@@ -112,6 +120,9 @@ const MatchModal = ({ isVisible, matchedProfile, onClose, onSendMessage }) => {
 
             {/* Modal */}
             <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Match con ${matchedProfile?.nombre || 'tu match'}`}
               className="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden"
               variants={modalVariants}
               initial="hidden"
@@ -120,13 +131,15 @@ const MatchModal = ({ isVisible, matchedProfile, onClose, onSendMessage }) => {
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="relative bg-gradient-to-br from-[#1A237E] to-[#00C853] p-8 text-center text-white">
+              <div className="relative bg-gradient-to-br from-slate-900 to-emerald-500 p-8 text-center text-white">
                 {/* Close button */}
                 <button
+                  type="button"
                   onClick={onClose}
-                  className="absolute top-4 right-4 p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+                  aria-label="Cerrar"
+                  className="absolute top-3 right-3 h-11 w-11 inline-flex items-center justify-center rounded-full bg-white/20 hover:bg-white/30 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/50"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-4 w-4" aria-hidden="true" />
                 </button>
 
                 {/* Match icon */}
@@ -170,8 +183,8 @@ const MatchModal = ({ isVisible, matchedProfile, onClose, onSendMessage }) => {
               >
                 <div className="text-center mb-6">
                   {/* Avatar placeholder */}
-                  <div className="w-20 h-20 bg-gradient-to-br from-[#1A237E]/10 to-[#00C853]/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <Heart className="h-10 w-10 text-[#00C853]" />
+                  <div className="w-20 h-20 bg-gradient-to-br from-slate-900/10 to-emerald-500/10 rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <Heart className="h-10 w-10 text-emerald-700" />
                   </div>
                   
                   <h3 className="text-xl font-bold text-gray-900 mb-1">
@@ -188,7 +201,7 @@ const MatchModal = ({ isVisible, matchedProfile, onClose, onSendMessage }) => {
                 <div className="space-y-3">
                   <Button
                     onClick={() => onSendMessage(matchedProfile)}
-                    className="w-full bg-gradient-to-r from-[#00C853] to-[#4CAF50] hover:from-[#00B04F] hover:to-[#45A049] text-white py-3 text-lg font-semibold rounded-xl shadow-lg"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3 text-lg font-bold rounded-xl"
                   >
                     <MessageCircle className="mr-2 h-5 w-5" />
                     Contactar por WhatsApp
@@ -197,7 +210,7 @@ const MatchModal = ({ isVisible, matchedProfile, onClose, onSendMessage }) => {
                   <Button
                     onClick={onClose}
                     variant="outline"
-                    className="w-full py-3 text-gray-600 border-gray-200 hover:bg-gray-50 rounded-xl"
+                    className="w-full py-3 text-slate-700 border-slate-300 hover:bg-slate-50 rounded-xl"
                   >
                     Continuar explorando
                   </Button>

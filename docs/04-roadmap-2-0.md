@@ -35,9 +35,12 @@ El piloto apunta a **marzo de 2027**, cuando empieza el año académico y los es
 - [x] **C** · Modo vitrina: sin backend la app ya no queda en blanco y `/auth` avisa "preparando 2.0".
 - [x] **C** · Proyecto Vercel `dentameet-cl` en `russokuns-projects`, conectado a GitHub y en producción: https://dentameet-cl.vercel.app
 - [x] **C** · Reconstruir el esquema en `supabase/migrations/20261030000000_baseline_v1.sql`; `npm run test:db` con 15/15 en verde.
+- [x] **C** · Pulido de 1.x (Impeccable): contenido honesto sin cifras inventadas, contacto por WhatsApp, estructura de app (barra superior y navegación inferior en móvil), y arreglos de Descubrir, Citas, Perfil y Opiniones. Modo demo local: `npm run dev:demo`.
+- [x] **C** · Hero partido (pacientes | estudiantes) con mazo de casos de ejemplo que se desliza.
 - [ ] **A** · Commit y push de estos cambios a `master`. Ojo: con el repo conectado, cada push a `master` despliega a producción.
-- [ ] **A** · Crear una **organización Supabase propia** ("DentaMeet", plan free, región São Paulo). No usar la organización *Nutrablue* (es de un cliente).
-- [ ] **A+C** · Crear el proyecto `dentameet`, aplicar la migración base y cargar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en Vercel (production y preview). *Solo si se decide reabrir 1.x; ver B1.*
+- [x] **A** · Conectar la organización Supabase *DentaMeet - Paciente Facil* (3 proyectos pausados; no usar la organización *Nutrablue*, que es de un cliente).
+- [ ] **C** · Restaurar `DentaMeetMVP`, revisar esquema y datos contra `baseline_v1` y decidir con qué proyecto se queda DentaMeet (plan free: máximo 2 activos).
+- [ ] **A+C** · Dejar el proyecto elegido al día (migraciones que falten) y cargar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en Vercel (production y preview). *Solo si se decide reabrir 1.x; ver B1.*
 - [ ] **A** · Correo de contacto que funcione (Gmail del proyecto o formulario hacia Supabase) para reemplazar `contacto@dentameet.net`.
 - [ ] **A** · Revisar en NIC Chile o en el registrador si `dentameet.net` se puede recuperar barato, o dejarlo ir y decidir la marca (ver `docs/01-prd-2-0.md` §9).
 
@@ -49,6 +52,36 @@ El piloto apunta a **marzo de 2027**, cuando empieza el año académico y los es
 - [ ] **C** · Borrador de **política de privacidad** y **términos** en `/privacidad` y `/terminos`, sin rutas rotas.
 - [ ] **A** · Que una persona con criterio legal revise esos textos (por ejemplo, la clínica jurídica de tu universidad). ❓
 - [ ] **C** · Consentimiento explícito y versionado (tabla `consents`) si se reabre el registro de 1.x.
+
+## B1.5 · Cerrar el flujo completo de 1.x con backend real → **HITO: 1.x usable de punta a punta**
+
+Hoy 1.x llega hasta el match y la cita en modo demo; falta que todo funcione contra un Supabase vivo y que el recorrido completo esté probado.
+
+- [ ] **A+C** · Elegir el proyecto Supabase que se queda. *(Recomendado: el original `DentaMeet`, sa-east-1: conserva 12 perfiles, 4 likes, 1 match y 2 citas; `DentaMeetMVP` tiene 15 cuentas pero 0 perfiles y quedó pausado.)*
+- [x] **C** · Migración de alineación `20261030120000_alinear_proyecto_real.sql` (idempotente), probada sobre una reproducción del esquema real: conserva datos y cierra tres fugas (teléfonos legibles por cualquiera, `swipes` sin RLS, `person_public` abierta a anon) y arregla `feedback` sin políticas.
+- [x] **A+C** · Aplicadas al proyecto real (2026-10-31) `20261030120000`, `20261031000000` y `20261031010000`, con respaldo previo en el esquema privado `backup_20261031`. Verificado: 12 perfiles, 4 likes, 1 match y 2 citas intactos; un usuario sin match ve 0 teléfonos ajenos; RLS activo en todas las tablas; el mazo devuelve perfiles reales con puntaje y razones.
+- [x] **A+C** · Aplicada `20261031020000_endurecer_advisors.sql` (vista `security_invoker`, `search_path` fijo, tablas nuevas fuera de anon). Advisors: sin errores; quedan solo los avisos intencionales (RPCs security definer, tablas visibles en GraphQL para usuarios con sesión, protegidas por RLS) y los dos del dashboard.
+- [ ] **A** · En el dashboard de Supabase: activar la protección contra contraseñas filtradas (Auth) y actualizar Postgres (17.4.1.048 tiene parches pendientes).
+- [ ] **A+C** · Borrar el esquema `backup_20261031` cuando el backend real lleve unas semanas estable.
+- [x] **C** · Mazo en el servidor: RPC `match_deck` con puntaje y razones; el cliente ya no baja todos los perfiles.
+- [x] **C** · Onboarding en 4 pasos con progreso, validación por paso y consentimiento explícito guardado con fecha y versión (`20261031010000_consentimiento.sql`).
+- [ ] **C** · Pedir el consentimiento a los 12 perfiles existentes la próxima vez que entren.
+- [x] **C** · Reportar y bloquear: RPCs `report_user` y `block_user`, el bloqueo saca del mazo, deshace el match y cancela citas futuras. Diálogo en Mis matches.
+- [ ] **A** · Cargar `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` en Vercel *después* de B1 (privacidad y consentimiento).
+- [x] **C** · Prueba E2E con Playwright contra el modo demo (`npm run test:e2e`, 10/10): panel → mazo → match → agendar → confirmar → opinar → reportar → onboarding.
+- [ ] **A** · Mismo recorrido contra el backend real con dos cuentas tuyas de prueba (crear cuentas en un servicio externo lo haces tú).
+
+## B1.6 · Renovación visual de toda la app
+
+Llevar el lenguaje del hero partido a cada pantalla, con inspiración en 21st.dev, Motion, Preline, Framer y Swiper. Skills: Impeccable, taste-skill (`design-taste-frontend`), `make-interfaces-feel-better`, `transitions-dev` (instaladas en `.claude/skills/`), `emil-design-eng`/`animate` y Playwright para capturas.
+
+- [ ] **A+C** · Dirección visual de la app: proponer y elegir el sistema (tipografía, color, superficies, movimiento) a partir del hero partido, y escribir `DESIGN.md`.
+- [ ] **C** · Componentes base: botones, inputs, chips, tarjetas, pestañas deslizantes, toasts, skeletons, estados vacíos, transición entre páginas y check de éxito (patrones de transitions-dev).
+- [ ] **C** · Auth y onboarding como asistente con progreso.
+- [ ] **C** · Descubrir: mazo tipo Swiper con razones del match, deshacer y postular con mensaje.
+- [ ] **C** · Panel, Mis matches, Citas (vista de calendario), Perfil y Opiniones con el nuevo sistema.
+- [ ] **C** · Landing completa (secciones bajo el hero), Nosotros y Contacto con el mismo lenguaje.
+- [ ] **C** · Pasada de `make-interfaces-feel-better` + capturas Playwright de desktop y móvil por pantalla.
 
 ## B2 · Validación con una facultad (en paralelo, **A**)
 

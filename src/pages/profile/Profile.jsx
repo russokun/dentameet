@@ -97,8 +97,8 @@ const Profile = () => {
 
   const getRoleIcon = () => {
     switch (profile?.role) {
-      case 'paciente': return <User className="w-6 h-6 text-[#00C853]" />
-      case 'estudiante': return <GraduationCap className="w-6 h-6 text-[#1A237E]" />
+      case 'paciente': return <User className="w-6 h-6 text-emerald-700" />
+      case 'estudiante': return <GraduationCap className="w-6 h-6 text-slate-900" />
       case 'dentameeter': return <User className="w-6 h-6 text-purple-600" />
       default: return <User className="w-6 h-6 text-gray-600" />
     }
@@ -106,8 +106,8 @@ const Profile = () => {
 
   const getRoleColor = () => {
     switch (profile?.role) {
-      case 'paciente': return 'from-[#00C853] to-green-600'
-      case 'estudiante': return 'from-[#1A237E] to-blue-600'
+      case 'paciente': return 'from-emerald-500 to-green-600'
+      case 'estudiante': return 'from-slate-900 to-blue-600'
       case 'dentameeter': return 'from-purple-600 to-purple-700'
       default: return 'from-gray-600 to-gray-700'
     }
@@ -167,7 +167,7 @@ const Profile = () => {
           transition={{ delay: 0.2 }}
           className="bg-white rounded-2xl shadow-lg p-8"
         >
-          <h2 className="text-2xl font-bold text-[#1A237E] mb-6">
+          <h2 className="text-2xl font-bold text-slate-900 mb-6">
             Editar Información Personal
           </h2>
 
@@ -215,7 +215,7 @@ const Profile = () => {
                   <select
                     id="universidad"
                     {...register('universidad')}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#1A237E] focus:border-transparent ${
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
                       errors.universidad ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
@@ -236,7 +236,7 @@ const Profile = () => {
                   <select
                     id="etapa_formacion"
                     {...register('etapa_formacion')}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#1A237E] focus:border-transparent ${
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
                       errors.etapa_formacion ? 'border-red-500' : 'border-gray-300'
                     }`}
                   >
@@ -265,7 +265,7 @@ const Profile = () => {
                         type="checkbox"
                         checked={watchedValues.tratamientos_interes?.includes(tratamiento) || false}
                         onChange={() => handleArrayChange('tratamientos_interes', tratamiento)}
-                        className="rounded border-gray-300 text-[#00C853] focus:ring-[#00C853]"
+                        className="rounded border-gray-300 text-emerald-700 focus:ring-emerald-500"
                       />
                       <span className="text-sm text-gray-700">{tratamiento}</span>
                     </label>
@@ -287,7 +287,7 @@ const Profile = () => {
                         type="checkbox"
                         checked={watchedValues.especialidades?.includes(especialidad) || false}
                         onChange={() => handleArrayChange('especialidades', especialidad)}
-                        className="rounded border-gray-300 text-[#1A237E] focus:ring-[#1A237E]"
+                        className="rounded border-gray-300 text-slate-900 focus:ring-emerald-500"
                       />
                       <span className="text-sm text-gray-700">{especialidad}</span>
                     </label>
@@ -309,7 +309,7 @@ const Profile = () => {
                         type="checkbox"
                         checked={watchedValues.horarios_disponibles?.includes(horario) || false}
                         onChange={() => handleArrayChange('horarios_disponibles', horario)}
-                        className="rounded border-gray-300 text-[#1A237E] focus:ring-[#1A237E]"
+                        className="rounded border-gray-300 text-slate-900 focus:ring-emerald-500"
                       />
                       <span className="text-sm text-gray-700">{horario}</span>
                     </label>
@@ -328,7 +328,7 @@ const Profile = () => {
                 id="descripcion"
                 rows={4}
                 {...register('descripcion')}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent resize-none"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent resize-none"
                 placeholder="Cuéntanos un poco sobre ti..."
               />
               {errors.descripcion && (
@@ -341,7 +341,7 @@ const Profile = () => {
               <Button
                 type="submit"
                 disabled={loading}
-                className="bg-gradient-to-r from-[#1A237E] to-[#00C853] text-white px-8 py-3 text-lg font-semibold"
+                className="bg-gradient-to-r from-slate-900 to-emerald-500 text-white px-8 py-3 text-lg font-semibold"
               >
                 {loading ? 'Guardando...' : 'Guardar Cambios'}
                 <Save className="ml-2 h-5 w-5" />

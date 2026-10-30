@@ -3,14 +3,13 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Helmet } from 'react-helmet'
-import { Heart, Users, Sparkles, RefreshCw } from 'lucide-react'
+import { Users, RefreshCw } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { MatchService } from '@/services/matchService'
-import { StatsService } from '@/services/StatsService'
 import MatchCard from '@/components/matches/MatchCard'
 import MatchModal from '@/components/matches/MatchModal'
-import { Button } from '@/components/ui/button'
+import PageHeader from '@/components/layout/PageHeader'
 import { toast } from '@/components/ui/use-toast'
 
 const Matches = () => {
@@ -50,7 +49,6 @@ const Matches = () => {
     console.log('Starting to load profiles...')
     
     // Debug: verificar usuarios por rol
-    await StatsService.debugUsersByRole()
     
     try {
       if (showLoader) setProfilesLoading(true)
@@ -93,7 +91,7 @@ const Matches = () => {
 
   useEffect(() => {
     // Solo cargar una vez cuando tengamos los datos necesarios
-    if (user?.id && profile?.role && !loadingAttempted && !profilesLoading && isMountedRef.current) {
+    if (user?.id && profile?.role && !loadingAttempted && !profilesLoading) {
       console.log('Loading profiles for user:', user.id, 'role:', profile.role)
       // Delay pequeño para asegurar que el componente esté completamente montado
       const timeoutId = setTimeout(() => {
@@ -223,196 +221,100 @@ const Matches = () => {
     setShowMatchModal(false)
   }
 
-  // Estados de carga simplificados
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
-        <motion.div className="text-center">
-          <motion.div
-            className="w-16 h-16 bg-[#00C853] rounded-full mx-auto mb-4 flex items-center justify-center"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          >
-            <Heart className="h-8 w-8 text-white" />
-          </motion.div>
-          <h2 className="text-xl font-semibold text-gray-700">Verificando autenticación...</h2>
-        </motion.div>
-      </div>
-    )
-  }
-
-  // Si el perfil está en proceso de carga, mostrar loading en vez de
-
-  if (profilesLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
-        <motion.div className="text-center">
-          <motion.div
-            className="w-16 h-16 bg-[#00C853] rounded-full mx-auto mb-4 flex items-center justify-center"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          >
-            <Heart className="h-8 w-8 text-white" />
-          </motion.div>
-          <h2 className="text-xl font-semibold text-gray-700">Buscando matches perfectos...</h2>
-          <p className="text-gray-500 mt-2">Esto puede tomar unos segundos</p>
-          
-          {/* Botón de emergencia después de 2 segundos */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2 }}
-          >
-            <Button
-              onClick={() => {
-                console.log('Emergency button clicked - forcing completion')
-                setProfilesLoading(false)
-                setLoadingAttempted(true)
-                toast({
-                  title: "Carga omitida",
-                  description: "Puedes intentar refrescar manualmente"
-                })
-              }}
-              variant="outline"
-              className="mt-4"
-            >
-              Omitir carga
-            </Button>
-          </motion.div>
-        </motion.div>
-      </div>
-    )
-  }
-
-  // No hay más perfiles
   const hasNoMoreProfiles = currentIndex >= profiles.length
+  const remaining = Math.max(profiles.length - currentIndex, 0)
+  const lookingFor = profile?.role === 'paciente' ? 'estudiantes' : profile?.role === 'estudiante' ? 'pacientes' : 'perfiles'
+
+  const refresh = () => {
+    setLoadingAttempted(false) // Reset para permitir nueva carga
+    loadProfiles(false)
+  }
 
   return (
     <>
       <Helmet>
-        <title>Descubrir - DentaMeet | Encuentra tu match perfecto</title>
-        <meta name="description" content="Descubre perfiles compatibles en DentaMeet. Conecta con estudiantes de odontología o encuentra pacientes ideales." />
+        <title>Descubrir | DentaMeet</title>
+        <meta name="description" content="Descubre perfiles compatibles en DentaMeet. Conecta con estudiantes de odontología o encuentra pacientes." />
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gradient-to-r from-[#1A237E] to-[#00C853] rounded-full flex items-center justify-center">
-                  <Heart className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">Descubrir</h1>
-                  <p className="text-sm text-gray-600">
-                    {profiles.length - currentIndex} perfiles disponibles
-                  </p>
-                </div>
-              </div>
+      <PageHeader
+        title="Descubrir"
+        subtitle={
+          authLoading || profilesLoading
+            ? `Buscando ${lookingFor} compatibles…`
+            : remaining > 0
+              ? `${remaining} ${remaining === 1 ? 'perfil compatible' : 'perfiles compatibles'} cerca de ti`
+              : `No hay más ${lookingFor} por ahora`
+        }
+        actions={
+          <button type="button" onClick={refresh} disabled={isRefreshing || profilesLoading} className="btn-secondary">
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin motion-reduce:animate-none' : ''}`} aria-hidden="true" />
+            Actualizar
+          </button>
+        }
+      />
 
-              <Button
-                onClick={() => {
-                  setLoadingAttempted(false) // Reset para permitir nueva carga
-                  loadProfiles(false)
-                }}
-                disabled={isRefreshing}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                <span>Actualizar</span>
-              </Button>
+      <div className="max-w-md mx-auto">
+        {authLoading || profilesLoading ? (
+          /* Cargando: esqueleto con la forma de la tarjeta */
+          <div className="app-card overflow-hidden" role="status" aria-label="Buscando perfiles">
+            <div className="h-72 bg-slate-100 animate-pulse motion-reduce:animate-none" />
+            <div className="p-6 space-y-3">
+              <div className="h-6 w-1/2 rounded bg-slate-100 animate-pulse motion-reduce:animate-none" />
+              <div className="h-4 w-3/4 rounded bg-slate-100 animate-pulse motion-reduce:animate-none" />
+              <div className="h-4 w-2/3 rounded bg-slate-100 animate-pulse motion-reduce:animate-none" />
             </div>
           </div>
-        </div>
-
-        <div className="max-w-md mx-auto p-4">
-          {hasNoMoreProfiles ? (
-            /* Estado vacío */
-            <motion.div
-              className="text-center py-16"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="w-24 h-24 bg-gradient-to-br from-[#1A237E]/10 to-[#00C853]/10 rounded-full mx-auto mb-6 flex items-center justify-center">
-                <Users className="h-12 w-12 text-gray-400" />
-              </div>
-              
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                ¡Has visto todos los perfiles!
-              </h2>
-              
-              <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-                No hay más personas por descubrir en este momento. Vuelve más tarde para ver nuevos perfiles.
-              </p>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={() => loadProfiles()}
-                  className="bg-gradient-to-r from-[#00C853] to-[#4CAF50] hover:from-[#00B04F] hover:to-[#45A049] text-white px-8 py-3 rounded-xl font-semibold shadow-lg"
-                >
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Buscar nuevos perfiles
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/my-matches')}
-                  className="w-full py-3 rounded-xl"
-                >
-                  Ver mis matches
-                </Button>
-              </div>
-            </motion.div>
-          ) : (
-            /* Stack de cards */
-            <div className="relative h-[600px]">
+        ) : hasNoMoreProfiles ? (
+          /* Estado vacío */
+          <div className="app-card text-center px-6 py-12">
+            <div className="w-16 h-16 bg-emerald-50 rounded-2xl mx-auto mb-5 flex items-center justify-center">
+              <Users className="h-8 w-8 text-emerald-700" aria-hidden="true" />
+            </div>
+            <h2 className="text-xl font-black text-slate-900 mb-2">Ya viste todos los perfiles</h2>
+            <p className="text-slate-600 mb-6 max-w-xs mx-auto">
+              Cuando se sumen {lookingFor} de tu zona aparecerán aquí. Mientras, revisa tus matches.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
+              <button type="button" onClick={() => navigate('/my-matches')} className="btn-primary">
+                Ver mis matches
+              </button>
+              <button type="button" onClick={refresh} disabled={isRefreshing} className="btn-secondary">
+                <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                Buscar de nuevo
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Stack de cards */
+          <>
+            <div className="relative h-[560px] sm:h-[600px]">
               <AnimatePresence mode="popLayout">
-                {profiles.slice(currentIndex, currentIndex + 3).map((profile, index) => (
+                {profiles.slice(currentIndex, currentIndex + 3).map((p, index) => (
                   <MatchCard
-                    key={`${profile.id}-${currentIndex + index}`}
-                    profile={profile}
+                    key={`${p.id}-${currentIndex + index}`}
+                    profile={p}
                     onLike={handleLike}
                     onPass={handlePass}
                     isTopCard={index === 0}
                   />
                 ))}
               </AnimatePresence>
-
-              {/* Indicadores de acción */}
-              <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex items-center space-x-4">
-                <motion.div
-                  className="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg"
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ delay: 0.5 }}
-                >
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center space-x-1">
-                      <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                      <span>Deslizar ← para pasar</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                      <span>Deslizar → para like</span>
-                    </div>
-                  </div>
-                </motion.div>
-              </div>
             </div>
-          )}
-        </div>
-
-        {/* Modal de match */}
-        <MatchModal
-          isVisible={showMatchModal}
-          matchedProfile={matchedProfile}
-          onClose={() => setShowMatchModal(false)}
-          onSendMessage={handleSendMessage}
-        />
+            <p className="mt-4 text-center text-sm text-slate-600">
+              Desliza a la derecha para dar like o a la izquierda para pasar.
+            </p>
+          </>
+        )}
       </div>
+
+      {/* Modal de match */}
+      <MatchModal
+        isVisible={showMatchModal}
+        matchedProfile={matchedProfile}
+        onClose={() => setShowMatchModal(false)}
+        onSendMessage={handleSendMessage}
+      />
     </>
   )
 }
