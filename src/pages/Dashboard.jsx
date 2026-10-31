@@ -132,42 +132,45 @@ const Dashboard = () => {
         </div>
       )}
 
-      {/* Lo siguiente que tienes que hacer */}
-      <section aria-labelledby="siguiente" className="app-card p-5 sm:p-6 mb-6">
-        <h2 id="siguiente" className="text-sm font-bold text-slate-600 mb-3">Lo siguiente</h2>
+      {/* Lo siguiente que tienes que hacer: la superficie azul noche del hero */}
+      <section aria-labelledby="siguiente" className="app-card-ink relative overflow-hidden p-6 sm:p-7 mb-6">
+        <div className="absolute -top-24 -right-16 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden="true" />
+        <h2 id="siguiente" className="relative text-sm font-bold text-emerald-300 mb-3">Lo siguiente</h2>
         {loading ? (
-          <div className="space-y-2 animate-pulse motion-reduce:animate-none" aria-label="Cargando">
-            <div className="h-6 w-2/3 rounded bg-slate-100" />
-            <div className="h-4 w-1/2 rounded bg-slate-100" />
+          <div className="relative space-y-2 animate-pulse motion-reduce:animate-none" aria-label="Cargando">
+            <div className="h-7 w-2/3 rounded-lg bg-white/10" />
+            <div className="h-4 w-1/2 rounded bg-white/10" />
           </div>
         ) : next ? (
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
             <div className="min-w-0">
-              <p className="text-xl font-black text-slate-900">
+              <p className="text-2xl sm:text-3xl font-black tracking-tight text-balance">
                 {next.tratamiento}
-                {nextWith?.nombre && <span className="font-semibold text-slate-600"> con {nextWith.nombre}</span>}
+                {nextWith?.nombre && <span className="font-bold text-white/70"> con {nextWith.nombre}</span>}
               </p>
-              <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-slate-600">
+              <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-white/75">
                 <span className="inline-flex items-center gap-1.5"><Calendar className="h-4 w-4" aria-hidden="true" />{formatDate(next.fecha_hora)}</span>
-                <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" aria-hidden="true" />{formatTime(next.fecha_hora)}</span>
+                <span className="inline-flex items-center gap-1.5 tabular-nums"><Clock className="h-4 w-4" aria-hidden="true" />{formatTime(next.fecha_hora)}</span>
                 {next.notas && <span className="inline-flex items-center gap-1.5 min-w-0"><MapPin className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="truncate">{next.notas}</span></span>}
               </p>
             </div>
-            <Link to="/appointments" className={iConfirmed ? 'btn-secondary' : 'btn-primary'}>
+            <Link to="/appointments" className={iConfirmed ? 'btn-secondary shrink-0' : 'btn-primary shrink-0'}>
               {iConfirmed ? <><CheckCircle2 className="h-4 w-4" aria-hidden="true" />Ver cita</> : 'Confirmar asistencia'}
             </Link>
           </div>
         ) : matches.length > 0 ? (
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-slate-700">
-              Tienes {matches.length === 1 ? 'un match' : `${matches.length} matches`} sin cita. Escríbele por WhatsApp y agenden una hora.
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <p className="text-xl sm:text-2xl font-black tracking-tight text-balance max-w-lg">
+              Tienes {matches.length === 1 ? 'un match' : `${matches.length} matches`} sin cita. Escríbele y agenden una hora.
             </p>
-            <Link to="/my-matches" className="btn-primary">Ver mis matches</Link>
+            <Link to="/my-matches" className="btn-primary shrink-0">Ver mis matches</Link>
           </div>
         ) : (
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-slate-700">Aún no tienes matches. Revisa perfiles compatibles y da like a quienes te interesen.</p>
-            <Link to="/matches" className="btn-primary">{copy.discover}</Link>
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <p className="text-xl sm:text-2xl font-black tracking-tight text-balance max-w-lg">
+              Aún no tienes matches. Da like a quienes te interesen y, si es mutuo, aparecerán aquí.
+            </p>
+            <Link to="/matches" className="btn-primary shrink-0">{copy.discover}</Link>
           </div>
         )}
       </section>
@@ -196,7 +199,7 @@ const Dashboard = () => {
               to={to}
               className="flex items-center gap-4 p-4 sm:p-5 hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:bg-emerald-50"
             >
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
                 <Icon className="h-5 w-5" aria-hidden="true" />
               </span>
               <span className="min-w-0 flex-1">
@@ -222,7 +225,7 @@ const Dashboard = () => {
             aria-valuemax={100}
             aria-label="Perfil completado"
           >
-            <div className="h-full rounded-full bg-emerald-500 transition-[width] duration-500" style={{ width: `${completeness}%` }} />
+            <div className="h-full rounded-full bg-emerald-400 transition-[width] duration-500" style={{ width: `${completeness}%` }} />
           </div>
           {missing.length === 0 ? (
             <p className="mt-4 text-sm text-slate-600">Tu perfil está completo. Así es más fácil que te encuentren.</p>

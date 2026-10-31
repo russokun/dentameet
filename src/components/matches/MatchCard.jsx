@@ -20,7 +20,7 @@ const MatchCard = forwardRef(({ profile, onLike, onPass, isTopCard = false }, re
   const tags = (profile.role === 'paciente' ? profile.tratamientos_interes : profile.especialidades) || []
   const shownTags = tags.slice(0, 3)
   const hiddenTags = tags.length - shownTags.length
-  const score = Number.isFinite(profile.compatibilityScore) ? profile.compatibilityScore : null
+  const score = Number.isFinite(profile.compatibilityScore) && profile.compatibilityScore >= 30 ? profile.compatibilityScore : null
 
   const handleLike = () => {
     setExitDirection('right')
@@ -78,7 +78,7 @@ const MatchCard = forwardRef(({ profile, onLike, onPass, isTopCard = false }, re
         } ${!isTopCard ? 'pointer-events-none' : ''}`}
       >
         {/* Identidad: sin fotos en 1.x, las iniciales sobre la superficie de marca */}
-        <div className="relative h-56 sm:h-64 shrink-0 bg-slate-950 mesh-gradient flex items-center justify-center overflow-hidden">
+        <div className="relative h-44 sm:h-64 shrink-0 bg-slate-950 flex items-center justify-center overflow-hidden">
           <div className="absolute -top-16 -right-16 h-48 w-48 rounded-full bg-emerald-500/20 blur-3xl" aria-hidden="true" />
           <div className="relative h-28 w-28 rounded-full bg-white/10 border border-white/20 flex items-center justify-center">
             <span className="text-4xl font-black tracking-tight text-white">{initials(profile)}</span>
@@ -90,18 +90,18 @@ const MatchCard = forwardRef(({ profile, onLike, onPass, isTopCard = false }, re
           </span>
 
           {score !== null && (
-            <span className="absolute top-4 right-4 rounded-full bg-emerald-500 px-3 py-1 text-xs font-black text-white tabular-nums">
+            <span className="absolute top-4 right-4 rounded-full bg-emerald-400 px-3 py-1 text-xs font-black text-slate-950 tabular-nums">
               {score}% compatible
             </span>
           )}
         </div>
 
         {/* Información */}
-        <div className="flex-1 min-h-0 p-5 sm:p-6 flex flex-col">
-          <h3 className="text-2xl font-black tracking-tight text-slate-900 truncate">
+        <div className="flex-1 min-h-0 overflow-hidden p-5 sm:p-6 flex flex-col">
+          <h3 className="shrink-0 text-2xl font-black tracking-tight text-slate-900 truncate">
             {profile.nombre} {profile.apellido}
           </h3>
-          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
+          <p className="shrink-0 mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-600">
             {profile.edad && <span>{profile.edad} años</span>}
             {profile.comuna && (
               <span className="inline-flex items-center gap-1">
@@ -112,7 +112,7 @@ const MatchCard = forwardRef(({ profile, onLike, onPass, isTopCard = false }, re
           </p>
 
           {profile.universidad && (
-            <p className="mt-3 flex items-start gap-2 text-sm text-slate-700">
+            <p className="shrink-0 mt-3 flex items-start gap-2 text-sm text-slate-700">
               <GraduationCap className="h-4 w-4 mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />
               <span>
                 <span className="font-semibold">{profile.universidad}</span>
@@ -126,7 +126,7 @@ const MatchCard = forwardRef(({ profile, onLike, onPass, isTopCard = false }, re
           )}
 
           {profile.matchReasons?.length > 0 && (
-            <ul className="mt-3 space-y-1" aria-label="Por qué aparece">
+            <ul className="shrink-0 mt-3 space-y-1" aria-label="Por qué aparece">
               {profile.matchReasons.slice(0, 3).map((reason) => (
                 <li key={reason} className="flex items-start gap-1.5 text-sm font-semibold text-emerald-800">
                   <Check className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
@@ -150,23 +150,30 @@ const MatchCard = forwardRef(({ profile, onLike, onPass, isTopCard = false }, re
           )}
 
           {/* Acciones */}
-          <div className="mt-auto pt-5 flex justify-center gap-6">
+          <div className="shrink-0 mt-auto pt-4 flex justify-center gap-6">
             <button
               type="button"
               onClick={handlePass}
               aria-label={`Pasar a ${profile.nombre || 'este perfil'}`}
-              className="h-16 w-16 rounded-full border-2 border-slate-200 bg-white text-slate-500 flex items-center justify-center hover:border-rose-300 hover:text-rose-600 hover:bg-rose-50 active:scale-95 transition-[background-color,border-color,color,transform] duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-500/30"
+              className="h-16 w-16 rounded-full bg-white text-slate-500 flex items-center justify-center shadow-[inset_0_0_0_2px_rgb(15_23_42/0.12)] hover:text-rose-600 hover:bg-rose-50 active:scale-[0.96] transition-[background-color,color,transform] duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-rose-500/30"
             >
               <X className="h-7 w-7" aria-hidden="true" />
             </button>
-            <button
+            <motion.button
               type="button"
               onClick={handleLike}
               aria-label={`Dar like a ${profile.nombre || 'este perfil'}`}
-              className="h-16 w-16 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-[0_10px_24px_-8px_rgba(5,150,105,0.6)] hover:bg-emerald-700 active:scale-95 transition-[background-color,transform] duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/40"
+              whileTap={{ scale: 0.96 }}
+              className="h-16 w-16 rounded-full bg-emerald-400 text-slate-950 flex items-center justify-center shadow-[0_10px_24px_-8px_rgba(16,185,129,0.65)] hover:bg-emerald-300 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/40"
             >
-              <Heart className="h-7 w-7" fill="currentColor" aria-hidden="true" />
-            </button>
+              <motion.span
+                animate={exitDirection === 'right' ? { scale: [1, 1.35, 1] } : { scale: 1 }}
+                transition={{ duration: 0.3, ease: [0.34, 1.36, 0.64, 1] }}
+                className="inline-flex"
+              >
+                <Heart className="h-7 w-7" fill="currentColor" aria-hidden="true" />
+              </motion.span>
+            </motion.button>
           </div>
         </div>
       </article>

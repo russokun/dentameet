@@ -30,10 +30,7 @@ const ROLES = [
 
 const STEPS = ['Tu rol', 'Tus datos', 'Tu perfil', 'Último paso']
 
-const fieldClass = (hasError) =>
-  `w-full min-h-[48px] px-4 py-2.5 rounded-xl border bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-colors ${
-    hasError ? 'border-rose-400' : 'border-slate-300'
-  }`
+const fieldClass = (hasError) => (hasError ? 'field field-error' : 'field')
 
 const Field = ({ id, label, hint, error, children }) => (
   <div>
@@ -145,7 +142,7 @@ const ProfileSetup = () => {
         consentimiento_at: new Date().toISOString(),
         consentimiento_version: CONSENT_VERSION,
       })
-      toast({ title: '¡Listo! Tu perfil está creado', description: 'Ya puedes empezar a descubrir.' })
+      toast({ variant: 'success', title: '¡Listo! Tu perfil está creado', description: 'Ya puedes empezar a descubrir.' })
       navigate('/matches')
     } catch {
       toast({ title: 'No se pudo guardar tu perfil', description: 'Revisa tu conexión e intenta de nuevo.', variant: 'destructive' })
@@ -175,7 +172,7 @@ const ProfileSetup = () => {
               <li key={label} className="h-1.5 rounded-full bg-slate-200 overflow-hidden" aria-current={i === step ? 'step' : undefined}>
                 <span className="sr-only">{label}</span>
                 <motion.span
-                  className="block h-full rounded-full bg-emerald-500"
+                  className="block h-full rounded-full bg-emerald-400"
                   initial={false}
                   animate={{ width: i <= step ? '100%' : '0%' }}
                   transition={{ duration: reduce ? 0 : 0.35, ease: [0.22, 1, 0.36, 1] }}
@@ -212,17 +209,17 @@ const ProfileSetup = () => {
                           aria-checked={selected}
                           onClick={() => setRole(id)}
                           className={`flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/20 ${
-                            selected ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'
+                            selected ? 'border-emerald-400 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'
                           }`}
                         >
-                          <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${selected ? 'bg-emerald-500 text-slate-950' : 'bg-slate-100 text-slate-700'}`}>
+                          <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${selected ? 'bg-emerald-400 text-slate-950' : 'bg-slate-100 text-slate-700'}`}>
                             <Icon className="h-6 w-6" aria-hidden="true" />
                           </span>
                           <span className="min-w-0 flex-1">
                             <span className="block font-black text-slate-900">{title}</span>
                             <span className="block text-sm text-slate-600">{description}</span>
                           </span>
-                          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${selected ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-slate-300'}`}>
+                          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 ${selected ? 'border-emerald-400 bg-emerald-400 text-slate-950' : 'border-slate-300'}`}>
                             {selected && <Check className="h-3.5 w-3.5" aria-hidden="true" />}
                           </span>
                         </button>

@@ -1,128 +1,109 @@
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Helmet } from "react-helmet";
-import { Sparkles, ShieldCheck, Zap } from "lucide-react";
+import { Link, useSearchParams } from "react-router-dom";
+import { ShieldCheck, MapPin, Heart, Sparkles } from "lucide-react";
 import Login from "./Login";
 import Register from "./Register";
-import { Link } from "react-router-dom";
+import SegmentedControl from "@/components/ui/SegmentedControl";
 import { isSupabaseConfigured } from "@/lib/supabaseClient";
 import { SOCIAL_LINKS } from "@/lib/contact";
 
+const FACTS = [
+  { icon: ShieldCheck, title: "Contacto protegido", desc: "Tu teléfono solo se comparte cuando ambos hacen match." },
+  { icon: MapPin, title: "Cerca de ti", desc: "Priorizamos personas de tu comuna y tu región." },
+  { icon: Heart, title: "Gratis para pacientes", desc: "Crear tu perfil y hacer match no cuesta nada." },
+];
+
+// Acceso con el lenguaje del hero partido: campo esmeralda con la promesa, formulario sobre azul noche
 const AuthPage = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [params] = useSearchParams();
+  const [mode, setMode] = useState(params.get("mode") === "login" ? "login" : params.get("rol") ? "register" : "login");
+  const reduce = useReducedMotion();
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center relative overflow-hidden selection:bg-emerald-500/30">
+    <div className="min-h-screen grid grid-cols-1 lg:grid-cols-2 bg-slate-950">
       <Helmet>
-        <title>{isLogin ? "Iniciar Sesión" : "Registrarse"} | DentaMeet</title>
-        <meta name="description" content={isLogin ? "Accede a tu cuenta DentaMeet" : "Únete a la red dental más grande de Chile"} />
+        <title>{mode === "login" ? "Entrar" : "Crear cuenta"} | DentaMeet</title>
+        <meta name="description" content="Entra o crea tu cuenta en DentaMeet para conectar con estudiantes de odontología o con pacientes." />
       </Helmet>
 
-      {/* Dynamic Background Elements */}
-      <div className="absolute inset-0 mesh-gradient opacity-40"></div>
-      <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[120px] animate-pulse"></div>
-      <div className="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }}></div>
+      {/* Campo esmeralda: la promesa */}
+      <section className="bg-emerald-400 text-slate-950 px-4 sm:px-8 lg:pl-[max(2rem,calc((100vw-80rem)/2+2rem))] lg:pr-16 pt-28 pb-10 lg:py-0 flex flex-col justify-center">
+        <div className="max-w-lg">
+          <h1 className="text-4xl sm:text-5xl xl:text-6xl font-black leading-[0.95] tracking-[-0.035em] text-balance">
+            El match que cuida tu sonrisa.
+          </h1>
+          <p className="mt-5 text-lg font-medium leading-relaxed max-w-md">
+            Pacientes y estudiantes de odontología, atendiendo en la clínica de la universidad con supervisión docente.
+          </p>
+          <ul className="mt-8 hidden sm:grid gap-4">
+            {FACTS.map(({ icon: Icon, title, desc }) => (
+              <li key={title} className="flex items-start gap-3">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-slate-950 text-emerald-300">
+                  <Icon className="h-5 w-5" aria-hidden="true" />
+                </span>
+                <span>
+                  <span className="block font-black">{title}</span>
+                  <span className="block text-slate-800">{desc}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
-      <div className="max-w-6xl w-full mx-auto px-4 relative z-10 pt-28 pb-12 lg:py-28">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          
-          {/* Left Panel: Value Proposition (Desktop Only) */}
-          <div className="hidden lg:block space-y-12 pr-12">
-            <div className="space-y-8">
-              <h1 className="text-6xl font-black text-white leading-none tracking-tight">
-                El futuro de la <br />
-                <span className="text-gradient">salud dental.</span>
-              </h1>
-              <p className="text-xl text-slate-300 font-medium leading-relaxed">
-                Conecta con estudiantes de odontología que atienden con supervisión docente, o encuentra pacientes para tus ramos clínicos.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 gap-6">
-              {[
-                { icon: ShieldCheck, title: "Contacto protegido", desc: "Tu teléfono solo se comparte cuando ambos hacen match." },
-                { icon: Zap, title: "Matches por cercanía", desc: "Priorizamos personas de tu comuna y tu región." },
-                { icon: Sparkles, title: "Gratis para pacientes", desc: "Crear tu perfil y hacer match no cuesta nada." }
-              ].map((feature, idx) => (
-                <div key={idx} className="flex items-start gap-4 p-4 rounded-2xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/5">
-                  <div className="p-2 rounded-xl bg-emerald-500/10 mt-1">
-                    <feature.icon className="h-5 w-5 text-emerald-500" />
-                  </div>
-                  <div>
-                    <h4 className="text-white font-bold">{feature.title}</h4>
-                    <p className="text-sm text-slate-400">{feature.desc}</p>
-                  </div>
+      {/* Azul noche: el formulario */}
+      <section className="px-4 sm:px-8 lg:pr-[max(2rem,calc((100vw-80rem)/2+2rem))] lg:pl-16 py-10 lg:pt-28 lg:pb-12 flex flex-col justify-center">
+        <div className="w-full max-w-md mx-auto lg:mx-0 lg:ml-auto">
+          <div className="app-card p-6 sm:p-8">
+            {!isSupabaseConfigured ? (
+              <div className="text-center py-4">
+                <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-50">
+                  <Sparkles className="h-7 w-7 text-emerald-700" aria-hidden="true" />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Right Panel: Auth Form Card */}
-          <div className="w-full max-w-xl mx-auto lg:mx-0">
-            <div className="bg-white rounded-[2rem] md:rounded-[2.5rem] p-6 sm:p-8 md:p-10 shadow-2xl">
-              
-              {/* Tabs Container */}
-              <div className={`${isSupabaseConfigured ? "flex" : "hidden"} bg-slate-100 p-1.5 rounded-2xl mb-10`}>
-                <button
-                  onClick={() => setIsLogin(true)}
-                  className={`flex-1 py-3 px-6 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${
-                    isLogin
-                      ? "bg-white text-emerald-600 shadow-md"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Entrar
-                </button>
-                <button
-                  onClick={() => setIsLogin(false)}
-                  className={`flex-1 py-3 px-6 rounded-xl text-sm font-black uppercase tracking-widest transition-all ${
-                    !isLogin
-                      ? "bg-white text-emerald-600 shadow-md"
-                      : "text-slate-500 hover:text-slate-800"
-                  }`}
-                >
-                  Unirse
-                </button>
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight">Estamos preparando DentaMeet 2.0</h2>
+                <p className="mt-3 text-slate-700 leading-relaxed">
+                  Las cuentas están pausadas mientras migramos la plataforma. Síguenos para enterarte cuando reabramos el registro.
+                </p>
+                <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
+                  <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="btn-primary">
+                    Seguir en Instagram
+                  </a>
+                  <Link to="/contact" className="btn-secondary">Escribirnos</Link>
+                </div>
               </div>
-
-              {/* Forms with Animation */}
-              <AnimatePresence mode="wait">
-                {!isSupabaseConfigured ? (
-                  <div key="vitrina" className="text-center py-4">
-                    <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
-                      <Sparkles className="h-7 w-7 text-emerald-700" aria-hidden="true" />
-                    </div>
-                    <h2 className="text-2xl font-black text-slate-900 tracking-tight">Estamos preparando DentaMeet 2.0</h2>
-                    <p className="mt-3 text-slate-700 leading-relaxed">
-                      Las cuentas están pausadas mientras migramos la plataforma. Síguenos para enterarte cuando reabramos el registro.
-                    </p>
-                    <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
-                      <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="btn-premium-accent px-6 py-3">
-                        Seguir en Instagram
-                      </a>
-                      <Link to="/contact" className="btn-secondary">
-                        Escribirnos
-                      </Link>
-                    </div>
-                  </div>
-                ) : isLogin ? (
-                  <Login key="login" onSwitchToRegister={() => setIsLogin(false)} />
-                ) : (
-                  <Register key="register" onSwitchToLogin={() => setIsLogin(true)} />
-                )}
-              </AnimatePresence>
-
-              {/* Legal Footer */}
-              {isSupabaseConfigured && (
-                <p className="text-center mt-8 pt-6 border-t border-slate-100 text-slate-600 text-xs leading-relaxed">
+            ) : (
+              <>
+                <SegmentedControl
+                  label="Acceso"
+                  className="w-full mb-7"
+                  value={mode}
+                  onChange={setMode}
+                  options={[{ value: "login", label: "Entrar" }, { value: "register", label: "Crear cuenta" }]}
+                />
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    key={mode}
+                    initial={reduce ? { opacity: 0 } : { opacity: 0, x: mode === "login" ? -12 : 12, filter: "blur(3px)" }}
+                    animate={{ opacity: 1, x: 0, filter: "blur(0px)", transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] }, transitionEnd: { filter: "none" } }}
+                    exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                  >
+                    {mode === "login" ? (
+                      <Login onSwitchToRegister={() => setMode("register")} />
+                    ) : (
+                      <Register onSwitchToLogin={() => setMode("login")} />
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+                <p className="mt-6 pt-5 border-t border-slate-100 text-center text-xs text-slate-600 leading-relaxed">
                   Usamos tus datos solo para conectarte con tu match. Tu teléfono no es público.
                 </p>
-              )}
-            </div>
+              </>
+            )}
           </div>
-
         </div>
-      </div>
+      </section>
     </div>
   );
 };

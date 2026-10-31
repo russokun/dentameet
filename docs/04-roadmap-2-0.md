@@ -75,13 +75,14 @@ Hoy 1.x llega hasta el match y la cita en modo demo; falta que todo funcione con
 
 Llevar el lenguaje del hero partido a cada pantalla, con inspiración en 21st.dev, Motion, Preline, Framer y Swiper. Skills: Impeccable, taste-skill (`design-taste-frontend`), `make-interfaces-feel-better`, `transitions-dev` (instaladas en `.claude/skills/`), `emil-design-eng`/`animate` y Playwright para capturas.
 
-- [ ] **A+C** · Dirección visual de la app: proponer y elegir el sistema (tipografía, color, superficies, movimiento) a partir del hero partido, y escribir `DESIGN.md`.
-- [ ] **C** · Componentes base: botones, inputs, chips, tarjetas, pestañas deslizantes, toasts, skeletons, estados vacíos, transición entre páginas y check de éxito (patrones de transitions-dev).
-- [ ] **C** · Auth y onboarding como asistente con progreso.
-- [ ] **C** · Descubrir: mazo tipo Swiper con razones del match, deshacer y postular con mensaje.
-- [ ] **C** · Panel, Mis matches, Citas (vista de calendario), Perfil y Opiniones con el nuevo sistema.
-- [ ] **C** · Landing completa (secciones bajo el hero), Nosotros y Contacto con el mismo lenguaje.
-- [ ] **C** · Pasada de `make-interfaces-feel-better` + capturas Playwright de desktop y móvil por pantalla.
+- [x] **A+C** · Dirección elegida (2026-10-31): base clara, cromo azul noche, esmeralda para la acción; gestos y transiciones; Inter. Documentada en `DESIGN.md`.
+- [x] **C** · Componentes base: botones en píldora, `.field`, `.app-card`/`.app-card-ink`, `SegmentedControl`, toasts con `SuccessCheck`, transición entre pantallas, pop del like.
+- [x] **C** · Onboarding como asistente con progreso y `/auth` como hero partido (registro solo con correo y contraseña; errores traducidos en línea; aviso de confirmar correo).
+- [x] **C** · Descubrir: mazo con física y razones del match; modal de match nuevo. *(Pendiente: deshacer y like con mensaje.)*
+- [x] **C** · Panel, Mis matches, Citas (con vista segmentada), Perfil y Opiniones con el nuevo sistema. *(Pendiente: vista de calendario en Citas.)*
+- [x] **C** · Landing, Nosotros y Contacto con el mismo lenguaje: campos de color completos, sin degradados ni etiquetas sobre los títulos, botones y tarjetas del sistema.
+- [x] **C** · Pasada de `make-interfaces-feel-better` (sombras en capas, press 0,96, `tabular-nums`, sin `transition: all`) y capturas de desktop y móvil.
+- [x] **C** · Arreglado bug heredado de 1.x: el timeout de `AuthContext` borraba el perfil a los 5 s y mandaba a todos al onboarding (prueba E2E agregada).
 
 ## B2 · Validación con una facultad (en paralelo, **A**)
 

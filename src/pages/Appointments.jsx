@@ -12,6 +12,8 @@ import { generateWhatsAppURL, generateWhatsAppMessage, formatDate, formatTime } 
 import { getHorasPorRango } from '@/utils/appointmentUtils'
 import { toast } from '@/components/ui/use-toast'
 import PageHeader from '@/components/layout/PageHeader'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 
 const STATUS = {
   pendiente: { label: 'Por confirmar', className: 'bg-amber-50 text-amber-800 border-amber-200' },
@@ -20,10 +22,7 @@ const STATUS = {
   cancelada: { label: 'Cancelada', className: 'bg-rose-50 text-rose-800 border-rose-200' },
 }
 
-const fieldClass = (hasError) =>
-  `w-full min-h-[44px] px-4 py-2.5 rounded-xl border bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-colors ${
-    hasError ? 'border-rose-400' : 'border-slate-300'
-  }`
+const fieldClass = (hasError) => (hasError ? 'field field-error' : 'field')
 
 const other = (row, userId) => (row.user1_id === userId ? row.user2 : row.user1) || {}
 const iConfirmed = (a, userId) => (a.user1_id === userId ? a.confirmado_por_user1 : a.confirmado_por_user2)
@@ -45,6 +44,8 @@ const Appointments = () => {
   const [submitting, setSubmitting] = useState(false)
   const [busyId, setBusyId] = useState(null)
   const [cancelingId, setCancelingId] = useState(null)
+  const [view, setView] = useState('proximas')
+  const reduce = useReducedMotion()
 
   const {
     register,
@@ -125,7 +126,7 @@ const Appointments = () => {
         tratamiento: data.tratamiento,
         notas: data.notas?.trim() || null
       })
-      toast({ title: 'Cita propuesta', description: `${partner?.nombre || 'La otra persona'} tiene que confirmarla.` })
+      toast({ variant: 'success', title: 'Cita propuesta', description: `${partner?.nombre || 'La otra persona'} tiene que confirmarla.` })
       closeForm()
       load()
     } catch {
@@ -157,7 +158,7 @@ const Appointments = () => {
     setBusyId(appointment.id)
     try {
       await AppointmentService.updateAppointmentStatus(appointment.id, 'completada', user.id)
-      toast({ title: 'Cita marcada como atendida', description: 'Ya puedes dejar tu opinión.' })
+      toast({ variant: 'success', title: 'Cita marcada como atendida', description: 'Ya puedes dejar tu opinión.' })
       load()
     } catch {
       toast({ title: 'No se pudo actualizar la cita', variant: 'destructive' })
@@ -363,12 +364,30 @@ const Appointments = () => {
           )}
         </div>
       ) : (
-        <div className="space-y-10">
-          {upcoming.length > 0 && (
-            <section aria-labelledby="proximas">
-              <h2 id="proximas" className="text-lg font-black text-slate-900 mb-3">
-                Próximas <span className="text-slate-500 font-semibold tabular-nums">({upcoming.length})</span>
-              </h2>
+        <div>
+          <SegmentedControl
+            label="Ver citas"
+            className="mb-5 w-full sm:w-auto"
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'proximas', label: 'Próximas', count: upcoming.length },
+              { value: 'historial', label: 'Historial', count: past.length },
+              { value: 'canceladas', label: 'Canceladas', count: canceled.length },
+            ]}
+          />
+          <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={view}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6, filter: 'blur(2px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+          >
+          {view === 'proximas' && (
+            <section aria-label="Próximas citas">
+              {upcoming.length === 0 && (
+                <p className="app-card p-6 text-slate-600">No tienes citas próximas. Propón una a alguno de tus matches.</p>
+              )}
               <ul className="space-y-3">
                 {upcoming.map((a) => {
                   const p = other(a, user.id)
@@ -406,7 +425,7 @@ const Appointments = () => {
                         {cancelingId === a.id ? (
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
                             <p className="text-sm font-semibold text-slate-900">¿Cancelar esta cita?</p>
-                            <button type="button" onClick={() => handleCancel(a)} disabled={busy} className="btn-primary bg-rose-600 hover:bg-rose-700 focus-visible:ring-rose-500/30">
+                            <button type="button" onClick={() => handleCancel(a)} disabled={busy} className="btn-danger">
                               Sí, cancelar
                             </button>
                             <button type="button" onClick={() => setCancelingId(null)} className="btn-secondary">No</button>
@@ -423,7 +442,7 @@ const Appointments = () => {
                               <MessageCircle className="h-4 w-4" aria-hidden="true" />
                               WhatsApp
                             </button>
-                            <button type="button" onClick={() => setCancelingId(a.id)} className="btn-secondary text-rose-700 hover:bg-rose-50 hover:border-rose-300">
+                            <button type="button" onClick={() => setCancelingId(a.id)} className="btn-secondary text-rose-700 hover:bg-rose-50">
                               Cancelar
                             </button>
                           </div>
@@ -439,12 +458,10 @@ const Appointments = () => {
             </section>
           )}
 
-          {past.length > 0 && (
-            <section aria-labelledby="historial">
-              <h2 id="historial" className="text-lg font-black text-slate-900 mb-3">
-                Historial <span className="text-slate-500 font-semibold tabular-nums">({past.length})</span>
-              </h2>
-              <ul className="app-card divide-y divide-slate-100 overflow-hidden">
+          {view === 'historial' && (
+            <section aria-label="Historial de citas">
+              {past.length === 0 && <p className="app-card p-6 text-slate-600">Aún no tienes citas pasadas.</p>}
+              <ul className={past.length ? 'app-card divide-y divide-slate-100 overflow-hidden' : 'hidden'}>
                 {past.map((a) => {
                   const p = other(a, user.id)
                   const attended = a.status === 'completada'
@@ -475,20 +492,24 @@ const Appointments = () => {
             </section>
           )}
 
-          {canceled.length > 0 && (
-            <details className="group">
-              <summary className="cursor-pointer list-none text-sm font-bold text-slate-600 hover:text-slate-900 inline-flex items-center gap-1 min-h-[44px]">
-                Canceladas ({canceled.length})
-              </summary>
-              <ul className="mt-2 app-card divide-y divide-slate-100 overflow-hidden">
-                {canceled.map((a) => (
-                  <li key={a.id} className="p-4 text-sm text-slate-600">
-                    <span className="font-semibold text-slate-800">{a.tratamiento}</span> · {formatDate(a.fecha_hora)}
-                  </li>
-                ))}
-              </ul>
-            </details>
+          {view === 'canceladas' && (
+            <section aria-label="Citas canceladas">
+              {canceled.length === 0 ? (
+                <p className="app-card p-6 text-slate-600">No tienes citas canceladas.</p>
+              ) : (
+                <ul className="app-card divide-y divide-slate-100 overflow-hidden">
+                  {canceled.map((a) => (
+                    <li key={a.id} className="p-4 text-sm text-slate-600">
+                      <span className="font-semibold text-slate-800">{a.tratamiento}</span> · {formatDate(a.fecha_hora)}
+                      {a.notas_cancelacion && <span className="block text-slate-500">{a.notas_cancelacion}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
           )}
+          </motion.div>
+          </AnimatePresence>
         </div>
       )}
     </>

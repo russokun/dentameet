@@ -23,10 +23,7 @@ const EDITABLE = [
   'tratamientos_interes', 'especialidades', 'horarios_disponibles', 'descripcion',
 ]
 
-const fieldClass = (hasError) =>
-  `w-full min-h-[44px] px-4 py-2.5 rounded-xl border bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 transition-colors ${
-    hasError ? 'border-rose-400' : 'border-slate-300'
-  }`
+const fieldClass = (hasError) => (hasError ? 'field field-error' : 'field')
 
 const Field = ({ id, label, hint, error, children }) => (
   <div>
@@ -106,7 +103,7 @@ const Profile = () => {
     if (Number.isNaN(payload.edad)) payload.edad = null
     try {
       await updateProfile(payload)
-      toast({ title: 'Perfil guardado', description: 'Tus cambios ya se ven en tus matches.' })
+      toast({ variant: 'success', title: 'Perfil guardado', description: 'Tus cambios ya se ven en tus matches.' })
     } catch {
       toast({ title: 'No se pudo guardar', description: 'Revisa tu conexión e intenta de nuevo.', variant: 'destructive' })
     }

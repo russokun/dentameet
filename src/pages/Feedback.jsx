@@ -43,7 +43,7 @@ const ReviewForm = ({ appointment, userId, onDone }) => {
         comentario: comentario.trim(),
         recomendaria,
       })
-      toast({ title: 'Gracias por tu opinión', description: 'Ayuda a que la comunidad sea más confiable.' })
+      toast({ variant: 'success', title: 'Gracias por tu opinión', description: 'Ayuda a que la comunidad sea más confiable.' })
       onDone()
     } catch {
       toast({ title: 'No se pudo enviar', description: 'Intenta de nuevo en un momento.', variant: 'destructive' })
@@ -92,7 +92,7 @@ const ReviewForm = ({ appointment, userId, onDone }) => {
           value={comentario}
           onChange={(e) => setComentario(e.target.value)}
           placeholder="Puntualidad, trato, claridad para explicar…"
-          className="w-full px-4 py-2.5 rounded-xl border border-slate-300 bg-white text-slate-900 placeholder:text-slate-500 focus:outline-none focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 resize-none"
+          className="field resize-none"
         />
       </div>
 

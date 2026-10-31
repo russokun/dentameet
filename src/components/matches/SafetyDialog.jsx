@@ -3,6 +3,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import { ShieldAlert, X } from 'lucide-react'
 import { MatchService } from '@/services/matchService'
 import { toast } from '@/components/ui/use-toast'
+import SegmentedControl from '@/components/ui/SegmentedControl'
 
 const REASONS = [
   { value: 'perfil_falso', label: 'Perfil falso o suplantación' },
@@ -32,6 +33,7 @@ const SafetyDialog = ({ person, onDone, trigger }) => {
       if (mode === 'report') await MatchService.reportUser(person.id, reason, details)
       else await MatchService.blockUser(person.id)
       toast({
+        variant: 'success',
         title: mode === 'report' ? 'Reporte enviado' : `Bloqueaste a ${name}`,
         description: mode === 'report' ? `Lo revisaremos. Ya no verás a ${name}.` : 'Ya no aparecerá en tu mazo ni podrá contactarte por la app.',
       })
@@ -66,20 +68,13 @@ const SafetyDialog = ({ person, onDone, trigger }) => {
             En ambos casos deja de aparecer en tu mazo, se deshace el match y se cancelan las citas pendientes.
           </Dialog.Description>
 
-          <div role="tablist" aria-label="Acción" className="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
-            {[['report', 'Reportar'], ['block', 'Solo bloquear']].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={mode === value}
-                onClick={() => setMode(value)}
-                className={`min-h-[40px] rounded-lg text-sm font-bold transition-colors ${mode === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            label="Acción"
+            className="mt-5 w-full"
+            value={mode}
+            onChange={setMode}
+            options={[{ value: 'report', label: 'Reportar' }, { value: 'block', label: 'Solo bloquear' }]}
+          />
 
           <form onSubmit={submit} className="mt-5 space-y-4">
             {mode === 'report' ? (
@@ -103,7 +98,7 @@ const SafetyDialog = ({ person, onDone, trigger }) => {
                     maxLength={1000}
                     value={details}
                     onChange={(e) => setDetails(e.target.value)}
-                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-4 focus:ring-rose-500/15 focus:border-rose-500 resize-none"
+                    className="field resize-none"
                   />
                 </div>
               </>
@@ -115,7 +110,7 @@ const SafetyDialog = ({ person, onDone, trigger }) => {
             <button
               type="submit"
               disabled={sending || (mode === 'report' && !reason)}
-              className="btn-primary w-full bg-rose-600 hover:bg-rose-700 focus-visible:ring-rose-500/30"
+              className="btn-danger w-full"
             >
               {sending ? 'Enviando…' : mode === 'report' ? 'Enviar reporte' : `Bloquear a ${name}`}
             </button>

@@ -1,11 +1,12 @@
 import React from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useOutlet } from 'react-router-dom'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { AuthProvider, useAuth } from '../contexts/AuthContext'
 
 // Components
 import Navbar, { PUBLIC_PATHS } from '../components/layout/Navbar'
 import Footer from '../components/layout/Footer'
-import AppTabBar from '../components/layout/AppTabBar'
+import AppTabBar, { tabIndex } from '../components/layout/AppTabBar'
 import { Toaster } from '../components/ui/toaster'
 
 // Pages
@@ -35,20 +36,53 @@ const AppShell = ({ children }) => (
   </main>
 )
 
-// Route protection component
-const ProtectedRoute = ({ children }) => {
+// Transición entre pantallas de la app: deslizamiento corto en la dirección de las pestañas
+// (patrón "page side-by-side" de transitions-dev: 250 ms, 8–16 px, desenfoque leve).
+const pageVariants = {
+  enter: ({ dir, reduce }) => (reduce ? { opacity: 0 } : { opacity: 0, x: dir * 16, filter: 'blur(3px)' }),
+  // Al terminar se quitan filter y transform: un ancestro con filtro rompe position: fixed
+  center: { opacity: 1, x: 0, filter: 'blur(0px)', transition: { duration: 0.25, ease: [0.22, 1, 0.36, 1] }, transitionEnd: { filter: 'none', transform: 'none' } },
+  exit: ({ dir, reduce }) =>
+    reduce ? { opacity: 0, transition: { duration: 0.1 } } : { opacity: 0, x: dir * -16, filter: 'blur(3px)', transition: { duration: 0.15, ease: [0.22, 1, 0.36, 1] } },
+}
+
+// Layout de las rutas privadas: protege, enmarca y anima el cambio de pantalla
+const AppLayout = () => {
   const { user, profile, loading } = useAuth()
+  const location = useLocation()
+  const outlet = useOutlet()
+  const reduce = useReducedMotion()
+  const prev = React.useRef(tabIndex(location.pathname))
+  const current = tabIndex(location.pathname)
+  const dir = current >= prev.current ? 1 : -1
+
+  React.useEffect(() => {
+    prev.current = current
+  }, [current])
 
   // Esperar si está cargando o el perfil sigue indefinido
   if (loading || typeof profile === 'undefined') return <LoadingSpinner />
-
   // Si no hay usuario, redirigir a /auth
   if (!user) return <Navigate to="/auth" replace />
-
   // Si el perfil es null, redirigir a /profile/setup
   if (!profile) return <Navigate to="/profile/setup" replace />
 
-  return <AppShell>{children}</AppShell>
+  return (
+    <AppShell>
+      <AnimatePresence mode="wait" initial={false} custom={{ dir, reduce }}>
+        <motion.div
+          key={location.pathname}
+          custom={{ dir, reduce }}
+          variants={pageVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+        >
+          {outlet}
+        </motion.div>
+      </AnimatePresence>
+    </AppShell>
+  )
 }
 
 // Redirect authenticated users away from auth pages
@@ -135,12 +169,14 @@ function AppRouter() {
               } />
 
               {/* PROTECTED ROUTES */}
-              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/matches" element={<ProtectedRoute><Matches /></ProtectedRoute>} />
-              <Route path="/my-matches" element={<ProtectedRoute><MyMatches /></ProtectedRoute>} />
-              <Route path="/appointments" element={<ProtectedRoute><Appointments /></ProtectedRoute>} />
-              <Route path="/feedback" element={<ProtectedRoute><Feedback /></ProtectedRoute>} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route element={<AppLayout />}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/matches" element={<Matches />} />
+                <Route path="/my-matches" element={<MyMatches />} />
+                <Route path="/appointments" element={<Appointments />} />
+                <Route path="/feedback" element={<Feedback />} />
+                <Route path="/profile" element={<Profile />} />
+              </Route>
 
               {/* 404 Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />

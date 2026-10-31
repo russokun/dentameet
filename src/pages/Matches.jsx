@@ -146,17 +146,8 @@ const Matches = () => {
         const fullProfile = await MatchService.getUserById(likedProfile.id).catch(() => null)
         setMatchedProfile(fullProfile ? { ...likedProfile, ...fullProfile } : likedProfile)
         setShowMatchModal(true)
-        
-        toast({
-          title: "🎉 ¡Es un Match!",
-          description: `Tú y ${likedProfile.nombre} se han gustado mutuamente`,
-        })
-      } else {
-        toast({
-          title: "❤️ Like enviado",
-          description: `Le diste like a ${likedProfile.nombre}`,
-        })
       }
+      // Sin toast por cada like: es la acción más frecuente y la salida de la tarjeta ya lo confirma
       
       // Avanzar al siguiente perfil
       setCurrentIndex(prev => prev + 1)

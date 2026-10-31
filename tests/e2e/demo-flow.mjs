@@ -19,6 +19,13 @@ await step('Panel muestra la próxima cita y el resumen', async () => {
   await see('Endodoncia con Matías')
 })
 
+await step('La sesión no se pierde tras 6 s (bug del timeout de AuthContext)', async () => {
+  await page.goto(`${BASE}/dashboard`)
+  await see('Hola, Camila')
+  await page.waitForTimeout(6000)
+  if (!page.url().endsWith('/dashboard')) throw new Error('redirigió a ' + page.url())
+})
+
 await step('Descubrir arma el mazo en el servidor y explica por qué aparece', async () => {
   await page.goto(`${BASE}/matches`)
   await see('perfiles compatibles cerca de ti')
@@ -34,7 +41,7 @@ await step('Like mutuo abre el modal de match', async () => {
     await page.waitForTimeout(600)
   }
   await page.getByRole('button', { name: 'Dar like a Valentina' }).click()
-  await see('Es un Match', { exact: false })
+  await see('¡Es un Match!')
 })
 
 await step('Mis matches lista el nuevo match y permite agendar', async () => {

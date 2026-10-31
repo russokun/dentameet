@@ -89,27 +89,12 @@ export const AuthProvider = ({ children }) => {
       })
       
       if (error) {
-        console.error('❌ Error en login:', error)
-        
-        let errorMessage = error.message;
-        if (error.message === 'Failed to fetch') {
-          errorMessage = "Error de conexión: No se pudo contactar con el servidor. Si estás en un evento, intenta usar tus datos móviles.";
-        }
-
-        toast({
-          title: "Error al iniciar sesión",
-          description: errorMessage,
-          variant: "destructive"
-        })
+        // El formulario muestra el error en línea, traducido
         throw error
       }
       
       console.log('✅ Login exitoso:', data.user?.id)
-      toast({
-        title: "¡Bienvenido!",
-        description: "Has iniciado sesión correctamente",
-        variant: "default"
-      })
+      toast({ variant: "success", title: "¡Hola de nuevo!", description: "Entraste a tu cuenta." })
       
       return data
     } catch (error) {
@@ -135,18 +120,7 @@ export const AuthProvider = ({ children }) => {
       })
       
       if (error) {
-        console.error('❌ Error en registro:', error)
-        
-        let errorMessage = error.message;
-        if (error.message === 'Failed to fetch') {
-          errorMessage = "Error de conexión: No se pudo contactar con el servidor. Si estás en un evento, intenta usar tus datos móviles.";
-        }
-
-        toast({
-          title: "Error al registrarse",
-          description: errorMessage,
-          variant: "destructive"
-        })
+        // El formulario muestra el error en línea, traducido
         throw error
       }
       
@@ -186,11 +160,10 @@ export const AuthProvider = ({ children }) => {
         }
       
       console.log('✅ Registro exitoso:', data.user?.id)
-      toast({
-        title: "¡Registro exitoso!",
-        description: "Cuenta creada correctamente. Completa tu perfil para continuar.",
-        variant: "default"
-      })
+      // Si Supabase pide confirmar el correo, no hay sesión todavía: hay que decirlo
+      toast(data.session
+        ? { variant: "success", title: "Cuenta creada", description: "Ahora completa tu perfil para empezar." }
+        : { variant: "success", title: "Revisa tu correo", description: `Te enviamos un enlace a ${email} para confirmar tu cuenta.` })
       
       return data
     } catch (error) {
@@ -311,13 +284,13 @@ export const AuthProvider = ({ children }) => {
       }
     )
 
-    // 4. Timeout de seguridad
+    // 4. Timeout de seguridad: si la red no responde, se deja de esperar.
+    // Usa actualizaciones funcionales: `loading` y `profile` en este closure son los del
+    // primer render, y comparar con ellos borraba el perfil de todos a los 5 segundos.
     const timeout = setTimeout(() => {
-      if (mounted && loading) {
-        console.warn('⚠️ Timeout de seguridad: forzando fin de carga')
-        setLoading(false)
-        if (profile === undefined) setProfile(null)
-      }
+      if (!mounted) return
+      setLoading(false)
+      setProfile((current) => (current === undefined ? null : current))
     }, 5000)
 
     initializeAuth()

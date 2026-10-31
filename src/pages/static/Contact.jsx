@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
 import { Helmet } from "react-helmet";
 import {
   Phone,
@@ -7,7 +6,6 @@ import {
   Send,
   Instagram,
   Linkedin,
-  MessageSquare,
   HelpCircle,
 } from "lucide-react";
 import { toast } from "@/components/ui/use-toast";
@@ -95,29 +93,19 @@ const Contact = () => {
         />
       </Helmet>
 
-      {/* Header - Simple & Clean */}
-      <section className="relative pt-32 pb-20 bg-slate-950 mesh-gradient overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-bold mb-8"
-          >
-            <MessageSquare className="h-4 w-4 mr-2" aria-hidden="true" />
-            Te respondemos por WhatsApp
-          </motion.div>
-          <h1 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight text-balance">
-            Hablemos de tu <br />
-            <span className="text-gradient">próximo match.</span>
+      {/* Encabezado azul noche, sin adornos: la acción es escribir */}
+      <section className="bg-slate-950 text-white pt-36 pb-28 lg:pt-44 lg:pb-36">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-end">
+          <h1 className="lg:col-span-7 text-5xl md:text-7xl font-black leading-[0.95] tracking-[-0.035em] text-balance">
+            Hablemos de tu próximo match.
           </h1>
-          <p className="text-xl text-slate-400 max-w-2xl mx-auto font-medium">
-            ¿Tienes preguntas sobre DentaMeet? Escríbenos por WhatsApp: dudas
-            sobre la plataforma, alianzas con universidades o soporte.
+          <p className="lg:col-span-5 text-lg md:text-xl text-white/75 font-medium leading-relaxed">
+            ¿Dudas sobre la plataforma, alianzas con universidades o soporte? Escríbenos por WhatsApp.
           </p>
         </div>
       </section>
 
-      <section className="py-24 relative -mt-10 lg:-mt-20 z-20">
+      <section className="pb-24 relative -mt-16 lg:-mt-20 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
             {/* Info Column */}
@@ -126,17 +114,18 @@ const Contact = () => {
                 href={whatsappUrl("Hola DentaMeet, tengo una consulta:")}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="premium-card group reveal-on-scroll block cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30"
+                className="group reveal-on-scroll block rounded-[2rem] bg-emerald-400 text-slate-950 p-8 md:p-10 transition-transform duration-200 ease-out hover:-translate-y-0.5 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-400/40"
+                style={{ boxShadow: "0 20px 44px -22px rgb(5 150 105 / 0.7)" }}
               >
                 <div className="flex items-center gap-6">
-                  <div className="p-4 rounded-2xl bg-emerald-500/10 group-hover:scale-110 transition-transform">
-                    <Phone className="h-8 w-8 text-emerald-600" aria-hidden="true" />
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-950 text-emerald-300">
+                    <Phone className="h-7 w-7" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-600 mb-1">
+                    <h3 className="text-sm font-bold mb-1">
                       WhatsApp
                     </h3>
-                    <p className="text-2xl font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">
+                    <p className="text-2xl font-black">
                       {WHATSAPP_DISPLAY}
                     </p>
                   </div>
@@ -145,8 +134,8 @@ const Contact = () => {
 
               <div className="premium-card group reveal-on-scroll">
                 <div className="flex items-center gap-6">
-                  <div className="p-4 rounded-2xl bg-rose-500/10">
-                    <MapPin className="h-8 w-8 text-rose-500" aria-hidden="true" />
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-slate-100">
+                    <MapPin className="h-7 w-7 text-slate-950" aria-hidden="true" />
                   </div>
                   <div>
                     <h3 className="text-sm font-bold text-slate-600 mb-1">
@@ -159,7 +148,7 @@ const Contact = () => {
                 </div>
               </div>
 
-              <div className="premium-card bg-slate-950 border-none reveal-on-scroll">
+              <div className="rounded-[2rem] bg-slate-950 p-8 md:p-10 reveal-on-scroll">
                 <h3 className="text-xl font-bold text-white mb-6">
                   Nuestras Redes
                 </h3>
@@ -186,7 +175,7 @@ const Contact = () => {
 
             {/* Form Column */}
             <div className="lg:col-span-7">
-              <div className="premium-card bg-white shadow-2xl reveal-on-scroll">
+              <div className="premium-card reveal-on-scroll">
                 <div className="mb-10">
                   <h2 className="text-3xl font-black text-slate-900 mb-2">
                     Envíanos un mensaje
@@ -209,7 +198,7 @@ const Contact = () => {
                         autoComplete="name"
                         value={formData.nombre}
                         onChange={handleInputChange}
-                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 placeholder:text-slate-500"
+                        className="field"
                         placeholder="Ej. Valentina Rojas"
                         required
                       />
@@ -223,7 +212,7 @@ const Contact = () => {
                         name="perfil"
                         value={formData.perfil}
                         onChange={handleInputChange}
-                        className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900"
+                        className="field"
                       >
                         {PERFILES.map((p) => (
                           <option key={p.value} value={p.value}>{p.label}</option>
@@ -242,7 +231,7 @@ const Contact = () => {
                       value={formData.mensaje}
                       onChange={handleInputChange}
                       rows={6}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:bg-white focus:ring-4 focus:ring-emerald-500/15 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 placeholder:text-slate-500 resize-none"
+                      className="field resize-none"
                       placeholder="¿En qué podemos ayudarte?"
                       required
                     />
@@ -250,7 +239,7 @@ const Contact = () => {
 
                   <button
                     type="submit"
-                    className="btn-premium-accent w-full py-5 text-lg group focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/40"
+                    className="btn-premium-accent w-full text-lg group"
                   >
                     <Send className="mr-3 h-5 w-5 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform" aria-hidden="true" />
                     Continuar en WhatsApp
