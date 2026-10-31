@@ -5,6 +5,13 @@
 @tailwind utilities;
 
 :root {
+  /* Movimiento (escala de transitions-dev): todo corto en la app */
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --duration-medium: 350ms;
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-bounce: cubic-bezier(0.34, 1.36, 0.64, 1);
+
   /* Primary Colors - Deep Trust */
   --primary: #0f172a; /* Slate 900 */
   --primary-light: #1e293b;
@@ -23,6 +30,21 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+::selection {
+  background: #d1fae5; /* emerald-100 */
+  color: #064e3b; /* emerald-900 */
+}
+
+:focus-visible {
+  outline-color: #10b981;
 }
 
 body {
@@ -57,31 +79,140 @@ body {
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.05);
   }
 
-  /* Premium Buttons */
+  /* Botones de las páginas públicas: las mismas píldoras del hero partido */
+  .btn-premium-accent,
+  .btn-premium-glass,
+  .btn-premium-primary {
+    @apply inline-flex items-center justify-center gap-2 min-h-[52px] px-7 py-3 rounded-full font-bold
+           transition-[background-color,transform] duration-150 ease-out active:scale-[0.96]
+           focus-visible:outline-none focus-visible:ring-4;
+  }
+
   .btn-premium-accent {
-    @apply px-8 py-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-2xl font-bold 
-           transition-all duration-300 shadow-lg shadow-emerald-500/25 active:scale-95 flex items-center justify-center;
+    @apply bg-emerald-400 text-slate-950 hover:bg-emerald-300 focus-visible:ring-emerald-400/40;
   }
 
   .btn-premium-glass {
-    @apply px-8 py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold 
-           transition-all duration-300 border border-white/10 backdrop-blur-md active:scale-95 flex items-center justify-center;
+    @apply bg-white/10 text-white hover:bg-white/20 focus-visible:ring-white/30;
   }
 
   .btn-premium-primary {
-    @apply px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold 
-           transition-all duration-300 shadow-lg active:scale-95 flex items-center justify-center;
+    @apply bg-slate-950 text-white hover:bg-slate-800 focus-visible:ring-slate-950/30;
   }
 
-  /* Premium Cards */
+  /* ── App: el mundo del hero partido llevado a pantallas de trabajo ──────────────
+     Base clara (slate-50), cromo azul noche (slate-950), esmeralda 400 solo para la
+     acción principal y estados. Píldoras como en el hero; sombras en capas en vez de
+     bordes para dar elevación; press a 0.96. Ver DESIGN.md. */
+  .btn-primary,
+  .btn-secondary,
+  .btn-ink,
+  .btn-danger {
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-full font-bold
+           transition-[background-color,box-shadow,transform,color] duration-150 ease-out
+           active:scale-[0.96] disabled:opacity-50 disabled:pointer-events-none
+           focus-visible:outline-none focus-visible:ring-4;
+  }
+
+  /* Acción principal: el campo esmeralda del hero, con tinta azul noche (contraste 10:1) */
+  .btn-primary {
+    @apply bg-emerald-400 text-slate-950 hover:bg-emerald-300 focus-visible:ring-emerald-400/40;
+  }
+
+  .btn-secondary {
+    @apply bg-white text-slate-900 hover:bg-slate-50 focus-visible:ring-emerald-400/40;
+    box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.16);
+  }
+
+  .btn-secondary:hover {
+    box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.28);
+  }
+
+  /* Acción fuerte neutra (azul noche), p. ej. dentro de una superficie esmeralda */
+  .btn-ink {
+    @apply bg-slate-950 text-white hover:bg-slate-800 focus-visible:ring-slate-950/30;
+  }
+
+  .btn-danger {
+    @apply bg-rose-600 text-white hover:bg-rose-700 focus-visible:ring-rose-500/30;
+  }
+
+  /* Superficie de trabajo: elevación con sombras en capas, sin borde duro */
+  .app-card {
+    @apply bg-white rounded-3xl;
+    box-shadow:
+      0 0 0 1px rgb(15 23 42 / 0.06),
+      0 1px 2px rgb(15 23 42 / 0.04),
+      0 12px 32px -16px rgb(15 23 42 / 0.14);
+  }
+
+  /* Superficie destacada: el azul noche del hero para "lo siguiente que tienes que hacer" */
+  .app-card-ink {
+    @apply bg-slate-950 text-white rounded-3xl;
+    box-shadow: 0 20px 44px -20px rgb(2 6 23 / 0.55);
+  }
+
+  /* Toast: sube desde abajo con fundido y desenfoque; entra más lento de lo que sale */
+  .toast-motion[data-state='open'] {
+    animation: toast-in 400ms var(--ease-smooth-out) both;
+  }
+  .toast-motion[data-state='closed'] {
+    animation: toast-out 200ms ease-in both;
+  }
+  .toast-motion[data-swipe='end'] {
+    animation: toast-out 150ms ease-in both;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateY(16px) scale(0.98); filter: blur(4px); }
+    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  }
+  @keyframes toast-out {
+    to { opacity: 0; transform: translateY(8px) scale(0.98); filter: blur(2px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .toast-motion[data-state='open'] { animation-name: toast-fade-in; }
+    .toast-motion[data-state='closed'],
+    .toast-motion[data-swipe='end'] { animation-name: toast-fade-out; }
+  }
+  @keyframes toast-fade-in { from { opacity: 0; } }
+  @keyframes toast-fade-out { to { opacity: 0; } }
+
+  /* Campos de formulario */
+  .field {
+    @apply w-full min-h-[48px] px-4 py-2.5 rounded-2xl bg-white text-slate-900 placeholder:text-slate-500
+           transition-[box-shadow,background-color] duration-150 ease-out
+           focus:outline-none disabled:bg-slate-50 disabled:text-slate-500;
+    box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.18);
+  }
+
+  .field:hover:not(:disabled) {
+    box-shadow: inset 0 0 0 1px rgb(15 23 42 / 0.3);
+  }
+
+  .field:focus {
+    box-shadow: inset 0 0 0 2px #10b981, 0 0 0 4px rgb(52 211 153 / 0.25);
+  }
+
+  .field-error,
+  .field[aria-invalid='true'] {
+    box-shadow: inset 0 0 0 2px #f43f5e;
+  }
+
+  /* Tarjetas de las páginas públicas: misma elevación que la app, sin levitar al pasar el mouse */
   .premium-card {
-    @apply bg-white rounded-[2.5rem] p-10 transition-all duration-500 border border-slate-100;
-    box-shadow: 0 20px 40px -20px rgba(0, 0, 0, 0.05);
+    @apply bg-white rounded-[2rem] p-8 md:p-10;
+    box-shadow:
+      0 0 0 1px rgb(15 23 42 / 0.06),
+      0 1px 2px rgb(15 23 42 / 0.04),
+      0 16px 40px -20px rgb(15 23 42 / 0.16);
   }
 
-  .premium-card:hover {
-    @apply -translate-y-3;
-    box-shadow: 0 30px 60px -20px rgba(0, 0, 0, 0.12);
+  a.premium-card {
+    @apply transition-[box-shadow,transform] duration-200 ease-out;
+  }
+
+  a.premium-card:hover {
+    @apply -translate-y-0.5;
   }
 
   /* Typography Gradient */

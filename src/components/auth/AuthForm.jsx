@@ -52,12 +52,12 @@ const AuthForm = ({ mode = 'login', onModeChange, selectedRole = 'paciente' }) =
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-4">
             {selectedRole === 'paciente' ? (
-              <User className="h-12 w-12 text-[#00C853]" />
+              <User className="h-12 w-12 text-emerald-700" />
             ) : (
-              <GraduationCap className="h-12 w-12 text-[#1A237E]" />
+              <GraduationCap className="h-12 w-12 text-slate-900" />
             )}
           </div>
-          <h2 className="text-2xl font-bold text-[#1A237E] mb-2">
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">
             {mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta'}
           </h2>
           <p className="text-gray-600">
@@ -156,7 +156,7 @@ const AuthForm = ({ mode = 'login', onModeChange, selectedRole = 'paciente' }) =
             {mode === 'login' ? '¿No tienes cuenta?' : '¿Ya tienes cuenta?'}
             <button
               onClick={toggleMode}
-              className="ml-2 text-[#1A237E] hover:text-[#00C853] font-semibold transition-colors"
+              className="ml-2 text-slate-900 hover:text-emerald-700 font-semibold transition-colors"
             >
               {mode === 'login' ? 'Regístrate' : 'Inicia Sesión'}
             </button>

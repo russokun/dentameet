@@ -1,3 +1,9 @@
 node_modules
 dist
-.env
+.vercel
+.env*
+!.env.example
+!.env.demo
+
+# Skills de terceros instaladas localmente (licencias propias; se reinstalan con `npx skills add`)
+.claude/skills/

@@ -1,615 +1,519 @@
-import { supabase } from '@/lib/supabaseClient'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { motion } from 'framer-motion'
-import { Calendar, Plus, CheckCircle, XCircle, AlertCircle, Clock, User, MapPin, MessageCircle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
+import { Helmet } from 'react-helmet'
+import { useSearchParams, Link } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { Calendar, Plus, CheckCircle2, Clock, MapPin, MessageCircle, X, AlertCircle, Heart } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { AppointmentService } from '@/services/appointmentService'
 import { MatchService } from '@/services/matchService'
-import { Helmet } from 'react-helmet'
-import { appointmentSchema } from '@/lib/zodSchemas'
+import { appointmentSchema, TRATAMIENTOS } from '@/lib/zodSchemas'
 import { generateWhatsAppURL, generateWhatsAppMessage, formatDate, formatTime } from '@/utils/matchUtils'
-import { getTratamientosCompatibles, isAppointmentConfirmed } from '@/utils/appointmentUtils'
 import { getHorasPorRango } from '@/utils/appointmentUtils'
 import { toast } from '@/components/ui/use-toast'
-import LoadingSpinner from '@/components/ui/LoadingSpinner'
+import PageHeader from '@/components/layout/PageHeader'
+import SegmentedControl from '@/components/ui/SegmentedControl'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
+
+const STATUS = {
+  pendiente: { label: 'Por confirmar', className: 'bg-amber-50 text-amber-800 border-amber-200' },
+  confirmada: { label: 'Confirmada', className: 'bg-emerald-50 text-emerald-800 border-emerald-200' },
+  completada: { label: 'Atendida', className: 'bg-slate-100 text-slate-700 border-slate-200' },
+  cancelada: { label: 'Cancelada', className: 'bg-rose-50 text-rose-800 border-rose-200' },
+}
+
+const fieldClass = (hasError) => (hasError ? 'field field-error' : 'field')
+
+const other = (row, userId) => (row.user1_id === userId ? row.user2 : row.user1) || {}
+const iConfirmed = (a, userId) => (a.user1_id === userId ? a.confirmado_por_user1 : a.confirmado_por_user2)
+const theyConfirmed = (a, userId) => (a.user1_id === userId ? a.confirmado_por_user2 : a.confirmado_por_user1)
+const today = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
 
 const Appointments = () => {
   const { user, profile } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
   const [appointments, setAppointments] = useState([])
-  const [appointmentsError, setAppointmentsError] = useState(null)
-  const [showCreateForm, setShowCreateForm] = useState(false)
-  const [selectedAppointment, setSelectedAppointment] = useState(null)
   const [matches, setMatches] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
   const [selectedMatchId, setSelectedMatchId] = useState('')
-  const [tratamientosDisponibles, setTratamientosDisponibles] = useState([])
-  const [horariosDisponibles, setHorariosDisponibles] = useState([])
+  const [submitting, setSubmitting] = useState(false)
+  const [busyId, setBusyId] = useState(null)
+  const [cancelingId, setCancelingId] = useState(null)
+  const [view, setView] = useState('proximas')
+  const reduce = useReducedMotion()
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
     reset
   } = useForm({
     resolver: zodResolver(appointmentSchema)
   })
 
-  useEffect(() => {
-    if (user && profile) {
-      loadAppointments()
-      loadMatches()
-    }
-  }, [user, profile])
-
-  const loadMatches = async () => {
+  const load = async () => {
     try {
-      // Obtiene matches reales del usuario autenticado
-      // Espera que cada match incluya los datos completos del otro usuario
-      const data = await MatchService.getMatches(user.id)
-      // Ejemplo de estructura esperada para cada match:
-      // {
-      //   id: 'match-uuid',
-      //   paciente_id: 'uuid',
-      //   estudiante_id: 'uuid',
-      //   paciente: { nombre, apellido, tratamientos_interes, horarios_disponibles, ... },
-      //   estudiante: { nombre, apellido, especialidades, horarios_disponibles, ... }
-      // }
-      setMatches(data)
-    } catch (error) {
-      console.error('Error loading matches:', error)
-      setMatches([])
+      setLoadError(false)
+      const [a, m] = await Promise.all([
+        AppointmentService.getAppointments(user.id),
+        MatchService.getMatches(user.id),
+      ])
+      setAppointments(a)
+      setMatches(m)
+    } catch {
+      setLoadError(true)
+    } finally {
+      setLoading(false)
     }
   }
 
-  const loadAppointments = async () => {
-    try {
-      setAppointmentsError(null);
-      const data = await AppointmentService.getAppointments(user.id, profile.role);
-      setAppointments(data);
-    } catch (error) {
-      setAppointmentsError(error);
-      setAppointments([]);
-      toast({
-        title: "Error",
-        description: "No se pudieron cargar las citas.",
-        variant: "destructive"
-      });
+  useEffect(() => {
+    if (user && profile) load()
+  }, [user, profile])
+
+  // Desde "Mis matches → Agendar" llega ?nueva=<matchId>
+  useEffect(() => {
+    const preset = searchParams.get('nueva')
+    if (preset && matches.some((m) => m.id === preset)) {
+      setSelectedMatchId(preset)
+      setShowCreateForm(true)
     }
+  }, [searchParams, matches])
+
+  const selectedMatch = matches.find((m) => m.id === selectedMatchId)
+  const partner = selectedMatch ? other(selectedMatch, user.id) : null
+
+  // Tratamientos sugeridos: lo que busca el paciente y lo que trabaja el estudiante; si no hay datos, el catálogo
+  const treatmentOptions = useMemo(() => {
+    if (!selectedMatch) return TRATAMIENTOS
+    const people = [selectedMatch.user1, selectedMatch.user2].filter(Boolean)
+    const fromProfiles = people.flatMap((p) => [...(p.tratamientos_interes || [])])
+    const unique = [...new Set(fromProfiles)]
+    return unique.length > 0 ? [...unique, ...TRATAMIENTOS.filter((t) => !unique.includes(t))] : TRATAMIENTOS
+  }, [selectedMatch])
+
+  // Horas en que ambos dijeron estar disponibles (sugerencias; la hora final es libre)
+  const suggestedHours = useMemo(() => {
+    if (!selectedMatch?.user1 || !selectedMatch?.user2) return []
+    const hours = (p) => (p.horarios_disponibles || []).flatMap((r) => getHorasPorRango(r))
+    const a = hours(selectedMatch.user1)
+    const b = hours(selectedMatch.user2)
+    return a.filter((h) => b.includes(h))
+  }, [selectedMatch])
+
+  const closeForm = () => {
+    setShowCreateForm(false)
+    setSelectedMatchId('')
+    reset()
+    if (searchParams.get('nueva')) setSearchParams({}, { replace: true })
   }
 
   const handleCreateAppointment = async (data) => {
-  // Depuración avanzada de sesión y JWT
-  const { data: { session } } = await supabase.auth.getSession();
-  const authUser = session?.user;
-  console.log('🔍 Supabase session:', session);
-  if (session) {
-    console.log('🔍 JWT access_token:', session.access_token);
-  } else {
-    console.warn('⚠️ No hay sesión activa en Supabase');
-  }
-  console.log('🔍 authUser:', authUser);
-  console.log('🔍 user (context):', user);
-  if (!user?.id || !authUser?.id) {
-    toast({
-      title: "Error de sesión",
-      description: "Debes iniciar sesión para crear una cita.",
-      variant: "destructive"
-    });
-    return;
-  }
-  // ...resto del código, asegurando que no se vuelve a declarar authUser
-  // Verificar sesión activa antes de crear cita
-  if (!user?.id || !authUser?.id) {
-    toast({
-      title: "Error de sesión",
-      description: "Debes iniciar sesión para crear una cita.",
-      variant: "destructive"
-    });
-    return;
-  }
-  // Obtener el match seleccionado antes de depurar
-  const match = matches.find(m => m.id === selectedMatchId);
-  // Depuración: imprimir IDs relevantes
-  console.log('user.id:', user?.id);
-  console.log('authUser.id:', authUser?.id);
-  console.log('match:', match);
-  console.log('match.user1_id:', match?.user1_id);
-  console.log('match.user2_id:', match?.user2_id);
+    if (!selectedMatch) return
+    setSubmitting(true)
     try {
-      const match = matches.find(m => m.id === selectedMatchId)
-      if (!match) throw new Error('Debes seleccionar un usuario para la cita.')
-
-      // Usar los campos user1_id y user2_id del objeto match (estructura real de la tabla matches)
-      const appointmentData = {
-        user1_id: match.user1_id,
-        user2_id: match.user2_id,
-        fecha_hora: `${data.fecha} ${data.hora}:00`,
-        tratamiento: data.tratamiento, // Si permites varios, usa data.tratamiento.join(', ')
-        notas: data.notas
-      }
-
-      await AppointmentService.createAppointment(appointmentData)
-
-      toast({
-        title: "Cita creada",
-        description: "La cita ha sido programada exitosamente."
+      await AppointmentService.createAppointment({
+        user1_id: selectedMatch.user1_id,
+        user2_id: selectedMatch.user2_id,
+        // Hora local de Chile → ISO con zona, para que no se corra al guardarla
+        fecha_hora: new Date(`${data.fecha}T${data.hora}:00`).toISOString(),
+        tratamiento: data.tratamiento,
+        notas: data.notas?.trim() || null
       })
-
-      reset()
-      setShowCreateForm(false)
-      loadAppointments()
-    } catch (error) {
-      console.error('Error creating appointment:', error)
-      toast({
-        title: "Error",
-        description: "No se pudo crear la cita.",
-        variant: "destructive"
-      })
+      toast({ variant: 'success', title: 'Cita propuesta', description: `${partner?.nombre || 'La otra persona'} tiene que confirmarla.` })
+      closeForm()
+      load()
+    } catch {
+      toast({ title: 'No se pudo crear la cita', description: 'Revisa tu conexión e intenta de nuevo.', variant: 'destructive' })
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const handleUpdateStatus = async (appointmentId, newStatus) => {
+  // Confirmar mi asistencia: la cita queda "confirmada" solo cuando ambos confirmaron
+  const handleConfirm = async (appointment) => {
+    setBusyId(appointment.id)
     try {
-      await AppointmentService.updateAppointmentStatus(appointmentId, newStatus, user.id)
-      
+      const both = theyConfirmed(appointment, user.id)
+      await AppointmentService.updateAppointmentStatus(appointment.id, both ? 'confirmada' : null, user.id)
       toast({
-        title: "Estado actualizado",
-        description: `La cita ha sido ${newStatus}.`
+        title: 'Asistencia confirmada',
+        description: both ? 'Ambos confirmaron. ¡Nos vemos en la clínica!' : 'Falta que la otra persona confirme.'
       })
-      
-      loadAppointments()
-    } catch (error) {
-      console.error('Error updating appointment:', error)
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el estado de la cita.",
-        variant: "destructive"
-      })
+      load()
+    } catch {
+      toast({ title: 'No se pudo confirmar', description: 'Intenta de nuevo en un momento.', variant: 'destructive' })
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const handleComplete = async (appointment) => {
+    setBusyId(appointment.id)
+    try {
+      await AppointmentService.updateAppointmentStatus(appointment.id, 'completada', user.id)
+      toast({ variant: 'success', title: 'Cita marcada como atendida', description: 'Ya puedes dejar tu opinión.' })
+      load()
+    } catch {
+      toast({ title: 'No se pudo actualizar la cita', variant: 'destructive' })
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const handleCancel = async (appointment) => {
+    setBusyId(appointment.id)
+    try {
+      await AppointmentService.cancelAppointment(appointment.id, user.id)
+      toast({ title: 'Cita cancelada', description: 'Avísale por WhatsApp a la otra persona.' })
+      setCancelingId(null)
+      load()
+    } catch {
+      toast({ title: 'No se pudo cancelar la cita', variant: 'destructive' })
+    } finally {
+      setBusyId(null)
     }
   }
 
   const handleWhatsAppContact = (appointment) => {
-    // Determinar el otro usuario según el contexto de user1/user2
-    let otherUser = null;
-    if (appointment.user1_id === user.id) {
-      otherUser = appointment.user2;
-    } else if (appointment.user2_id === user.id) {
-      otherUser = appointment.user1;
-    }
+    const otherUser = other(appointment, user.id)
     if (!otherUser?.telefono) {
       toast({
-        title: "Error",
-        description: "El usuario no tiene número de teléfono registrado.",
-        variant: "destructive"
-      });
-      return;
+        title: 'Sin número de WhatsApp',
+        description: `${otherUser?.nombre || 'Esta persona'} aún no agrega su teléfono a su perfil.`,
+        variant: 'destructive'
+      })
+      return
     }
-    const message = generateWhatsAppMessage(profile, otherUser, appointment);
-    const whatsappUrl = generateWhatsAppURL(otherUser.telefono, message);
-    window.open(whatsappUrl, '_blank');
+    const message = generateWhatsAppMessage(profile, otherUser, appointment)
+    window.open(generateWhatsAppURL(otherUser.telefono, message), '_blank', 'noopener,noreferrer')
   }
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'confirmada':
-        return <CheckCircle className="w-5 h-5 text-green-500" />
-      case 'completada':
-        return <CheckCircle className="w-5 h-5 text-blue-500" />
-      case 'cancelada':
-        return <XCircle className="w-5 h-5 text-red-500" />
-      default:
-        return <AlertCircle className="w-5 h-5 text-yellow-500" />
-    }
-  }
-
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'confirmada': return 'bg-green-100 text-green-800'
-      case 'completada': return 'bg-blue-100 text-blue-800'
-      case 'cancelada': return 'bg-red-100 text-red-800'
-      default: return 'bg-yellow-100 text-yellow-800'
-    }
-  }
-
-  const groupAppointmentsByStatus = () => {
-    const grouped = {
-      proximas: appointments.filter(apt => 
-        ['pendiente', 'confirmada'].includes(apt.status) && 
-        new Date(apt.fecha_hora) >= new Date()
-      ),
-      pasadas: appointments.filter(apt => 
-        apt.status === 'completada' || 
-        (new Date(apt.fecha_hora) < new Date() && apt.status !== 'cancelada')
-      ),
-      canceladas: appointments.filter(apt => apt.status === 'cancelada')
-    }
-    return grouped
-  }
-
-  const groupedAppointments = groupAppointmentsByStatus()
-  // Eliminado: if (loading) {
-  if (appointmentsError) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96">
-        <p className="text-red-600 text-lg font-semibold mb-2">Error cargando citas</p>
-        <p className="text-gray-600 mb-4">{appointmentsError.message || 'Intenta recargar la página o contacta soporte.'}</p>
-        <Button onClick={loadAppointments} className="btn-primary">Reintentar</Button>
-      </div>
-    );
-  }
-
-  if (appointments.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-96">
-        <p className="text-gray-600 text-lg font-semibold mb-2">No tienes citas programadas.</p>
-        <Button onClick={loadAppointments} className="btn-primary">Recargar</Button>
-      </div>
-    );
-  }
+  const now = Date.now()
+  const upcoming = appointments
+    .filter((a) => ['pendiente', 'confirmada'].includes(a.status) && new Date(a.fecha_hora).getTime() >= now)
+    .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))
+  const past = appointments
+    .filter((a) => a.status === 'completada' || (a.status !== 'cancelada' && new Date(a.fecha_hora).getTime() < now))
+    .sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora))
+  const canceled = appointments.filter((a) => a.status === 'cancelada')
 
   return (
     <>
       <Helmet>
-        <title>Mis Citas - DentaMeet PacienteFácil</title>
-        <meta name="description" content="Gestiona tus citas dentales en DentaMeet." />
+        <title>Mis citas | DentaMeet</title>
       </Helmet>
 
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-[#1A237E]">Mis Citas</h1>
-            <p className="text-gray-600">Gestiona tus citas dentales programadas</p>
-          </div>
-          
-          <Button
-            onClick={() => setShowCreateForm(true)}
-            className="btn-primary"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Nueva Cita
-          </Button>
+      <PageHeader
+        title="Mis citas"
+        subtitle="Propón una hora a tus matches y confirma tu asistencia."
+        actions={
+          !showCreateForm && (
+            <button
+              type="button"
+              onClick={() => setShowCreateForm(true)}
+              disabled={matches.length === 0}
+              className="btn-primary"
+              title={matches.length === 0 ? 'Necesitas un match para agendar' : undefined}
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Nueva cita
+            </button>
+          )
+        }
+      />
+
+      {loadError && (
+        <div role="alert" className="app-card p-5 mb-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <AlertCircle className="h-6 w-6 text-rose-600 shrink-0" aria-hidden="true" />
+          <p className="flex-1 text-slate-700">No pudimos cargar tus citas. Revisa tu conexión e intenta de nuevo.</p>
+          <button type="button" className="btn-secondary" onClick={load}>Reintentar</button>
         </div>
+      )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-lg p-6 shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Próximas</p>
-                <p className="text-2xl font-bold text-green-600">{groupedAppointments.proximas.length}</p>
-              </div>
-              <Calendar className="w-8 h-8 text-green-600" />
+      {/* Nueva cita */}
+      {showCreateForm && (
+        <section aria-labelledby="nueva-cita" className="app-card p-5 sm:p-6 mb-8">
+          <div className="flex items-start justify-between gap-4 mb-5">
+            <div>
+              <h2 id="nueva-cita" className="text-xl font-black text-slate-900">Proponer una cita</h2>
+              <p className="text-sm text-slate-600 mt-1">La otra persona recibe la propuesta y la confirma desde sus citas.</p>
             </div>
+            <button type="button" onClick={closeForm} aria-label="Cerrar" className="h-11 w-11 -mr-2 -mt-2 inline-flex items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100">
+              <X className="h-5 w-5" aria-hidden="true" />
+            </button>
           </div>
-          
-          <div className="bg-white rounded-lg p-6 shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completadas</p>
-                <p className="text-2xl font-bold text-blue-600">{groupedAppointments.pasadas.length}</p>
-              </div>
-              <CheckCircle className="w-8 h-8 text-blue-600" />
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg p-6 shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Canceladas</p>
-                <p className="text-2xl font-bold text-red-600">{groupedAppointments.canceladas.length}</p>
-              </div>
-              <XCircle className="w-8 h-8 text-red-600" />
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg p-6 shadow-md">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total</p>
-                <p className="text-2xl font-bold text-[#1A237E]">{appointments.length}</p>
-              </div>
-              <Calendar className="w-8 h-8 text-[#1A237E]" />
-            </div>
-          </div>
-        </div>
 
-        {/* Create Appointment Form */}
-        {showCreateForm && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl shadow-lg p-6"
-          >
-            <h2 className="text-xl font-bold text-[#1A237E] mb-4">Programar Nueva Cita</h2>
-            <form onSubmit={handleSubmit(handleCreateAppointment)} className="space-y-4">
-              {/* Selector de usuario del match */}
-              <div>
-                <Label htmlFor="match">Usuario *</Label>
-                <select
-                  id="match"
-                  value={selectedMatchId}
-                  onChange={e => {
-                    setSelectedMatchId(e.target.value)
-                    // Filtrar tratamientos y horarios al seleccionar match
-                    const match = matches.find(m => m.id === e.target.value)
-                    if (match) {
-                      // Obtener datos de usuario1 y usuario2 por ID
-                      Promise.all([
-                        MatchService.getUserById(match.user1_id),
-                        MatchService.getUserById(match.user2_id)
-                      ]).then(([user1, user2]) => {
-                        setTratamientosDisponibles(getTratamientosCompatibles(
-                          user1.tratamientos_interes,
-                          user2.tratamientos_interes
-                        ))
-                        // Convertir rangos de horario en arrays de horas válidas y filtrar intersección
-                        const horasUser1 = Array.isArray(user1.horarios_disponibles)
-                          ? user1.horarios_disponibles.flatMap(r => getHorasPorRango(r))
-                          : [];
-                        const horasUser2 = Array.isArray(user2.horarios_disponibles)
-                          ? user2.horarios_disponibles.flatMap(r => getHorasPorRango(r))
-                          : [];
-                        setHorariosDisponibles(
-                          horasUser1.length && horasUser2.length
-                            ? horasUser1.filter(h => horasUser2.includes(h))
-                            : []
-                        );
-                      }).catch(() => {
-                        setTratamientosDisponibles([])
-                        setHorariosDisponibles([])
-                      })
-                    } else {
-                      setTratamientosDisponibles([])
-                      setHorariosDisponibles([])
-                    }
-                  }}
-                  className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent"
-                  required
-                >
-                  <option value="">Selecciona usuario</option>
-                  {matches.length === 0 && (
-                    <option value="" disabled>No tienes matches disponibles</option>
-                  )}
-                  {matches.map(m => {
-                    // Mostrar ambos usuarios en el match, manejo defensivo
-                    if (!m.user1 || !m.user2) return null;
-                    return (
-                      <option key={m.id} value={m.id}>
-                        {(m.user1?.nombre || 'Sin nombre')} {(m.user1?.apellido || '')} - {(m.user2?.nombre || 'Sin nombre')} {(m.user2?.apellido || '')}
-                      </option>
-                    );
-                  })}
-                </select>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="fecha">Fecha *</Label>
-                  <Input
-                    id="fecha"
-                    type="date"
-                    min={new Date().toISOString().split('T')[0]}
-                    {...register('fecha')}
-                    className={errors.fecha ? 'border-red-500' : ''}
-                  />
-                  {errors.fecha && (
-                    <p className="text-red-500 text-sm mt-1">{errors.fecha.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="hora">Hora *</Label>
-                  <select
-                    id="hora"
-                    {...register('hora')}
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent ${
-                      errors.hora ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    required
-                  >
-                    <option value="">Selecciona una hora</option>
-                    {horariosDisponibles.map(h => (
-                      <option key={h} value={h}>{h}</option>
-                    ))}
-                  </select>
-                  {errors.hora && (
-                    <p className="text-red-500 text-sm mt-1">{errors.hora.message}</p>
-                  )}
-                </div>
-              </div>
-              <div>
-                <Label htmlFor="tratamiento">Tratamiento *</Label>
-                <select
-                  id="tratamiento"
-                  {...register('tratamiento')}
-                  className={errors.tratamiento ? 'border-red-500' : 'w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent'}
-                  required
-                >
-                  <option value="">Selecciona tratamiento</option>
-                  {tratamientosDisponibles.map(t => (
-                    <option key={t} value={t}>{t}</option>
-                  ))}
-                </select>
-                {errors.tratamiento && (
-                  <p className="text-red-500 text-sm mt-1">{errors.tratamiento.message}</p>
-                )}
-              </div>
-              <div>
-                <Label htmlFor="notas">Notas adicionales</Label>
-                <textarea
-                  id="notas"
-                  rows={3}
-                  placeholder="Información adicional sobre la cita..."
-                  {...register('notas')}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent resize-none"
-                />
-              </div>
-              <div className="flex justify-end space-x-4">
-                <Button
-                  type="button"
-                  onClick={() => setShowCreateForm(false)}
-                  variant="outline"
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  className="btn-primary"
-                >
-                  Crear Cita
-                </Button>
-              </div>
-            </form>
-          </motion.div>
-        )}
+          <form onSubmit={handleSubmit(handleCreateAppointment)} className="space-y-5" noValidate>
+            <div>
+              <label htmlFor="match" className="block text-sm font-bold text-slate-700 mb-1.5">Con quién</label>
+              <select id="match" value={selectedMatchId} onChange={(e) => setSelectedMatchId(e.target.value)} className={fieldClass(false)} required>
+                <option value="">Elige uno de tus matches</option>
+                {matches.map((m) => {
+                  const p = other(m, user.id)
+                  return (
+                    <option key={m.id} value={m.id}>
+                      {[p.nombre, p.apellido].filter(Boolean).join(' ') || 'Match sin nombre'}
+                      {p.universidad ? ` · ${p.universidad}` : ''}
+                    </option>
+                  )
+                })}
+              </select>
+            </div>
 
-        {/* Próximas Citas */}
-        {groupedAppointments.proximas.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-[#1A237E] mb-4">Próximas Citas</h2>
-            <div className="grid gap-4">
-              {groupedAppointments.proximas.map((appointment) => {
-                const otherUser = appointment.paciente_id === user.id ? appointment.estudiante : appointment.paciente
-                
-                return (
-                  <motion.div
-                    key={appointment.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="bg-white rounded-lg shadow-md p-6"
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3 mb-2">
-                          {getStatusIcon(appointment.status)}
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                            {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
-                          </span>
-                        </div>
-                        
-                        <h3 className="text-lg font-semibold text-[#1A237E] mb-1">
-                          {appointment.tratamiento}
-                        </h3>
-                        
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-                          <div className="space-y-1">
-                            <div className="flex items-center">
-                              <Calendar className="w-4 h-4 mr-2" />
-                              {formatDate(appointment.fecha_hora)}
-                            </div>
-                            <div className="flex items-center">
-                              <Clock className="w-4 h-4 mr-2" />
-                              {formatTime(appointment.fecha_hora)}
-                            </div>
-                          </div>
-                          
-                          <div className="space-y-1">
-                            <div className="flex items-center">
-                              <User className="w-4 h-4 mr-2" />
-                              {(() => {
-                                let otherUser = null;
-                                if (appointment.user1_id === user.id) {
-                                  otherUser = appointment.user2;
-                                } else if (appointment.user2_id === user.id) {
-                                  otherUser = appointment.user1;
-                                }
-                                return `${otherUser?.nombre || 'Sin nombre'} ${otherUser?.apellido || ''}`;
-                              })()}
-                            </div>
-                            <div className="flex items-center">
-                              <MapPin className="w-4 h-4 mr-2" />
-                              {(() => {
-                                let otherUser = null;
-                                if (appointment.user1_id === user.id) {
-                                  otherUser = appointment.user2;
-                                } else if (appointment.user2_id === user.id) {
-                                  otherUser = appointment.user1;
-                                }
-                                return otherUser?.comuna || 'Sin comuna';
-                              })()}
-                            </div>
-                          </div>
-                        </div>
-                        
-                        {appointment.notas && (
-                          <p className="text-sm text-gray-700 mt-2 bg-gray-50 p-2 rounded">
-                            {appointment.notas}
-                          </p>
-                        )}
-                      </div>
-                      
-                      <div className="flex flex-col space-y-2 ml-4">
-                        <Button
-                          onClick={() => handleWhatsAppContact(appointment)}
-                          className="btn-secondary text-sm"
-                          size="sm"
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="fecha" className="block text-sm font-bold text-slate-700 mb-1.5">Fecha</label>
+                <input id="fecha" type="date" min={today()} {...register('fecha')} className={fieldClass(errors.fecha)} aria-invalid={!!errors.fecha} />
+                {errors.fecha && <p className="text-sm text-rose-700 mt-1">{errors.fecha.message}</p>}
+              </div>
+              <div>
+                <label htmlFor="hora" className="block text-sm font-bold text-slate-700 mb-1.5">Hora</label>
+                <input id="hora" type="time" step="900" {...register('hora')} className={fieldClass(errors.hora)} aria-invalid={!!errors.hora} />
+                {errors.hora && <p className="text-sm text-rose-700 mt-1">{errors.hora.message}</p>}
+                {suggestedHours.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs text-slate-600 mb-1.5">Ambos están disponibles:</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestedHours.map((h) => (
+                        <button
+                          key={h}
+                          type="button"
+                          onClick={() => setValue('hora', h, { shouldValidate: true })}
+                          className="min-h-[36px] rounded-full border border-slate-300 px-3 text-sm font-semibold text-slate-700 hover:border-emerald-500 hover:text-emerald-800 tabular-nums"
                         >
-                          <MessageCircle className="w-4 h-4 mr-1" />
-                          WhatsApp
-                        </Button>
-                        
-                        {!isAppointmentConfirmed(appointment) && (
-                          <Button
-                            onClick={() => handleUpdateStatus(appointment.id, 'confirmada')}
-                            variant="outline"
-                            size="sm"
-                          >
-                            Confirmar
-                          </Button>
-                        )}
-                        
-                        {appointment.status === 'confirmada' && (
-                          <Button
-                            onClick={() => handleUpdateStatus(appointment.id, 'completada')}
-                            className="bg-blue-600 hover:bg-blue-700 text-white"
-                            size="sm"
-                          >
-                            Completar
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Citas Pasadas */}
-        {groupedAppointments.pasadas.length > 0 && (
-          <div>
-            <h2 className="text-xl font-bold text-[#1A237E] mb-4">Historial de Citas</h2>
-            <div className="grid gap-4">
-              {groupedAppointments.pasadas.slice(0, 5).map((appointment) => {
-                const otherUser = appointment.paciente_id === user.id ? appointment.estudiante : appointment.paciente
-                
-                return (
-                  <div key={appointment.id} className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-800">{appointment.tratamiento}</h3>
-                        <p className="text-sm text-gray-600">
-                          {formatDate(appointment.fecha_hora)} • {(otherUser?.nombre || 'Sin nombre')} {(otherUser?.apellido || '')}
-                        </p>
-                      </div>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(appointment.status)}`}>
-                        Completada
-                      </span>
+                          {h}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )
-              })}
+                )}
+              </div>
             </div>
+
+            <div>
+              <label htmlFor="tratamiento" className="block text-sm font-bold text-slate-700 mb-1.5">Tratamiento</label>
+              <select id="tratamiento" {...register('tratamiento')} className={fieldClass(errors.tratamiento)} aria-invalid={!!errors.tratamiento}>
+                <option value="">Elige el tratamiento</option>
+                {treatmentOptions.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+              {errors.tratamiento && <p className="text-sm text-rose-700 mt-1">{errors.tratamiento.message}</p>}
+            </div>
+
+            <div>
+              <label htmlFor="notas" className="block text-sm font-bold text-slate-700 mb-1.5">
+                Lugar y notas <span className="font-medium text-slate-500">(opcional)</span>
+              </label>
+              <textarea
+                id="notas"
+                rows={3}
+                placeholder="Ej. Clínica odontológica de la facultad, piso 2. Llevar carnet."
+                {...register('notas')}
+                className={`${fieldClass(false)} resize-none`}
+              />
+            </div>
+
+            <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button type="button" onClick={closeForm} className="btn-secondary">Cancelar</button>
+              <button type="submit" disabled={!selectedMatch || submitting} className="btn-primary">
+                {submitting ? 'Enviando…' : 'Proponer cita'}
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+
+      {loading ? (
+        <div className="space-y-3" role="status" aria-label="Cargando citas">
+          {[0, 1].map((i) => (
+            <div key={i} className="app-card p-5 space-y-3">
+              <div className="h-5 w-24 rounded-full bg-slate-100 animate-pulse motion-reduce:animate-none" />
+              <div className="h-6 w-1/3 rounded bg-slate-100 animate-pulse motion-reduce:animate-none" />
+              <div className="h-4 w-1/2 rounded bg-slate-100 animate-pulse motion-reduce:animate-none" />
+            </div>
+          ))}
+        </div>
+      ) : appointments.length === 0 && !showCreateForm ? (
+        <div className="app-card text-center px-6 py-12 max-w-md mx-auto">
+          <div className="w-16 h-16 bg-emerald-50 rounded-2xl mx-auto mb-5 flex items-center justify-center">
+            <Calendar className="h-8 w-8 text-emerald-700" aria-hidden="true" />
           </div>
-        )}
-      </div>
+          <h2 className="text-xl font-black text-slate-900 mb-2">Todavía no tienes citas</h2>
+          {matches.length > 0 ? (
+            <>
+              <p className="text-slate-600 mb-6">Coordina con tu match por WhatsApp y propón una hora en la clínica.</p>
+              <button type="button" onClick={() => setShowCreateForm(true)} className="btn-primary">
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Proponer una cita
+              </button>
+            </>
+          ) : (
+            <>
+              <p className="text-slate-600 mb-6">Para agendar necesitas un match. Empieza por descubrir perfiles compatibles.</p>
+              <Link to="/matches" className="btn-primary">
+                <Heart className="h-4 w-4" aria-hidden="true" />
+                Descubrir
+              </Link>
+            </>
+          )}
+        </div>
+      ) : (
+        <div>
+          <SegmentedControl
+            label="Ver citas"
+            className="mb-5 w-full sm:w-auto"
+            value={view}
+            onChange={setView}
+            options={[
+              { value: 'proximas', label: 'Próximas', count: upcoming.length },
+              { value: 'historial', label: 'Historial', count: past.length },
+              { value: 'canceladas', label: 'Canceladas', count: canceled.length },
+            ]}
+          />
+          <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={view}
+            initial={reduce ? { opacity: 0 } : { opacity: 0, y: 6, filter: 'blur(2px)' }}
+            animate={{ opacity: 1, y: 0, filter: 'blur(0px)', transition: { duration: 0.2, ease: [0.22, 1, 0.36, 1] } }}
+            exit={{ opacity: 0, transition: { duration: 0.12 } }}
+          >
+          {view === 'proximas' && (
+            <section aria-label="Próximas citas">
+              {upcoming.length === 0 && (
+                <p className="app-card p-6 text-slate-600">No tienes citas próximas. Propón una a alguno de tus matches.</p>
+              )}
+              <ul className="space-y-3">
+                {upcoming.map((a) => {
+                  const p = other(a, user.id)
+                  const status = STATUS[a.status] || STATUS.pendiente
+                  const mine = iConfirmed(a, user.id)
+                  const theirs = theyConfirmed(a, user.id)
+                  const busy = busyId === a.id
+                  return (
+                    <li key={a.id} className="app-card p-5">
+                      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0">
+                          <span className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-bold ${status.className}`}>
+                            {status.label}
+                          </span>
+                          <h3 className="mt-2 text-lg font-black text-slate-900">
+                            {a.tratamiento}
+                            {p.nombre && <span className="font-semibold text-slate-600"> con {p.nombre} {p.apellido}</span>}
+                          </h3>
+                          <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+                            <span className="inline-flex items-center gap-1.5"><Calendar className="h-4 w-4" aria-hidden="true" />{formatDate(a.fecha_hora)}</span>
+                            <span className="inline-flex items-center gap-1.5 tabular-nums"><Clock className="h-4 w-4" aria-hidden="true" />{formatTime(a.fecha_hora)}</span>
+                          </p>
+                          {a.notas && (
+                            <p className="mt-2 flex items-start gap-1.5 text-sm text-slate-700">
+                              <MapPin className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />{a.notas}
+                            </p>
+                          )}
+                          {a.status === 'pendiente' && (
+                            <p className="mt-2 text-sm text-slate-600">
+                              {mine ? `Esperando que ${p.nombre || 'la otra persona'} confirme.` : 'Te falta confirmar tu asistencia.'}
+                            </p>
+                          )}
+                        </div>
+
+                        {cancelingId === a.id ? (
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center lg:shrink-0">
+                            <p className="text-sm font-semibold text-slate-900">¿Cancelar esta cita?</p>
+                            <button type="button" onClick={() => handleCancel(a)} disabled={busy} className="btn-danger">
+                              Sí, cancelar
+                            </button>
+                            <button type="button" onClick={() => setCancelingId(null)} className="btn-secondary">No</button>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap lg:shrink-0 lg:justify-end">
+                            {!mine && (
+                              <button type="button" onClick={() => handleConfirm(a)} disabled={busy} className="btn-primary col-span-2 sm:col-span-1">
+                                <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
+                                Confirmar asistencia
+                              </button>
+                            )}
+                            <button type="button" onClick={() => handleWhatsAppContact(a)} className="btn-secondary">
+                              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                              WhatsApp
+                            </button>
+                            <button type="button" onClick={() => setCancelingId(a.id)} className="btn-secondary text-rose-700 hover:bg-rose-50">
+                              Cancelar
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                      {theirs && !mine && (
+                        <p className="mt-3 text-xs font-semibold text-emerald-800">{p.nombre || 'La otra persona'} ya confirmó.</p>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )}
+
+          {view === 'historial' && (
+            <section aria-label="Historial de citas">
+              {past.length === 0 && <p className="app-card p-6 text-slate-600">Aún no tienes citas pasadas.</p>}
+              <ul className={past.length ? 'app-card divide-y divide-slate-100 overflow-hidden' : 'hidden'}>
+                {past.map((a) => {
+                  const p = other(a, user.id)
+                  const attended = a.status === 'completada'
+                  return (
+                    <li key={a.id} className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
+                        <p className="font-bold text-slate-900">{a.tratamiento}</p>
+                        <p className="text-sm text-slate-600">
+                          {formatDate(a.fecha_hora)}{p.nombre ? ` · con ${p.nombre} ${p.apellido || ''}` : ''}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {attended ? (
+                          <>
+                            <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-bold ${STATUS.completada.className}`}>Atendida</span>
+                            <Link to="/feedback" className="text-sm font-bold text-emerald-700 hover:text-emerald-800 px-2 py-2">Opinar</Link>
+                          </>
+                        ) : (
+                          <button type="button" onClick={() => handleComplete(a)} disabled={busyId === a.id} className="btn-secondary">
+                            Marcar como atendida
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            </section>
+          )}
+
+          {view === 'canceladas' && (
+            <section aria-label="Citas canceladas">
+              {canceled.length === 0 ? (
+                <p className="app-card p-6 text-slate-600">No tienes citas canceladas.</p>
+              ) : (
+                <ul className="app-card divide-y divide-slate-100 overflow-hidden">
+                  {canceled.map((a) => (
+                    <li key={a.id} className="p-4 text-sm text-slate-600">
+                      <span className="font-semibold text-slate-800">{a.tratamiento}</span> · {formatDate(a.fecha_hora)}
+                      {a.notas_cancelacion && <span className="block text-slate-500">{a.notas_cancelacion}</span>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
+          </motion.div>
+          </AnimatePresence>
+        </div>
+      )}
     </>
   )
-
 }
 
-export default Appointments;
+export default Appointments

@@ -42,7 +42,7 @@ const RegionComunaSelector = ({
           value={regionValue || ''}
           onChange={(e) => onRegionChange(e.target.value)}
           disabled={disabled}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent ${
+          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
             regionError ? 'border-red-500' : 'border-gray-300'
           } ${disabled ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         >
@@ -66,7 +66,7 @@ const RegionComunaSelector = ({
           value={comunaValue || ''}
           onChange={(e) => onComunaChange(e.target.value)}
           disabled={disabled || !regionValue}
-          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-[#00C853] focus:border-transparent ${
+          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent ${
             comunaError ? 'border-red-500' : 'border-gray-300'
           } ${(disabled || !regionValue) ? 'bg-gray-100 cursor-not-allowed' : ''}`}
         >

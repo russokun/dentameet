@@ -1,394 +1,248 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet'
-import { 
-  Users, 
-  Calendar, 
-  MessageSquare, 
-  TrendingUp, 
+import {
+  Users,
+  Calendar,
   Heart,
-  Award,
-  Clock,
+  User,
   Star,
-  Shield,
-  Loader
+  ChevronRight,
+  Clock,
+  MapPin,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
-import { supabase } from '../lib/supabaseClient'
+import { MatchService } from '../services/matchService'
+import { AppointmentService } from '../services/appointmentService'
+import { formatDate, formatTime } from '../utils/matchUtils'
+import PageHeader from '../components/layout/PageHeader'
+
+// Campos que de verdad existen en `person` y que mejoran el match, por rol
+const PROFILE_FIELDS = {
+  paciente: [
+    ['telefono', 'Teléfono'],
+    ['comuna', 'Comuna'],
+    ['edad', 'Edad'],
+    ['tratamientos_interes', 'Tratamientos de interés'],
+    ['horarios_disponibles', 'Horarios disponibles'],
+    ['descripcion', 'Descripción'],
+  ],
+  estudiante: [
+    ['telefono', 'Teléfono'],
+    ['comuna', 'Comuna'],
+    ['universidad', 'Universidad'],
+    ['etapa_formacion', 'Etapa de formación'],
+    ['especialidades', 'Especialidades'],
+    ['horarios_disponibles', 'Horarios disponibles'],
+    ['descripcion', 'Descripción'],
+  ],
+}
+PROFILE_FIELDS.dentameeter = [...PROFILE_FIELDS.estudiante, ['tratamientos_interes', 'Tratamientos de interés']]
+
+const isFilled = (v) => (Array.isArray(v) ? v.length > 0 : v !== null && v !== undefined && String(v).trim() !== '')
+
+const COPY = {
+  paciente: { subtitle: 'Encuentra estudiantes de odontología para tu tratamiento.', discover: 'Descubrir estudiantes' },
+  estudiante: { subtitle: 'Encuentra pacientes para tus requisitos clínicos.', discover: 'Descubrir pacientes' },
+  dentameeter: { subtitle: 'Conecta como paciente y como estudiante.', discover: 'Descubrir perfiles' },
+}
+
+const otherPerson = (row, userId) => (row.user1_id === userId ? row.user2 : row.user1)
 
 const Dashboard = () => {
-  const { profile, user, loading: authLoading } = useAuth()
-  const [stats, setStats] = useState(null)
+  const { profile, user } = useAuth()
+  const [matches, setMatches] = useState([])
+  const [appointments, setAppointments] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Cargar estadísticas reales desde Supabase
   useEffect(() => {
-    const loadDashboardStats = async () => {
-      if (!user) {
-        setLoading(false)
-        return
-      }
-
+    if (!user) return
+    let active = true
+    const load = async () => {
       try {
-        // Obtener datos de usuarios para stats generales
-        const { data: usersData, error: usersError } = await supabase
-          .from('person')
-          .select('*')
-        
-        if (usersError) throw usersError
-
-        // Calcular estadísticas reales - solo estudiantes y pacientes
-        const totalUsers = usersData?.length || 0
-        const estudiantes = usersData?.filter(p => p.role === 'estudiante').length || 0
-        const pacientes = usersData?.filter(p => p.role === 'paciente').length || 0
-        const dentameaters = usersData?.filter(p => p.role === 'dentameeter').length || 0
-        
-        // Calcular completeness del perfil actual
-        const profileFields = ['nombre', 'apellido', 'telefono', 'ciudad', 'bio', 'especialidad', 'universidad']
-        const completedFields = profileFields.filter(field => profile?.[field]).length
-        const profileCompleteness = Math.round((completedFields / profileFields.length) * 100)
-
-        setStats({
-          totalUsers,
-          estudiantes,
-          pacientes,
-          dentameaters,
-          matchesActivos: 0, // Por ahora 0 hasta implementar matches
-          citasProgramadas: 0, // Por ahora 0 hasta implementar citas
-          profileCompleteness,
-          feedbackRecibido: { count: 0, average: 0 }, // Por ahora 0
-          progresoDelMes: { percentage: profileCompleteness, change: 5 }
-        })
-        
-      } catch (error) {
-        console.error('❌ Error loading dashboard stats:', error)
-        setError(error.message)
+        setError(null)
+        const [m, a] = await Promise.all([
+          MatchService.getMatches(user.id),
+          AppointmentService.getAppointments(user.id),
+        ])
+        if (!active) return
+        setMatches(m)
+        setAppointments(a)
+      } catch (e) {
+        if (active) setError('No pudimos cargar tu información. Revisa tu conexión e intenta de nuevo.')
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
+    load()
+    return () => { active = false }
+  }, [user])
 
-    loadDashboardStats()
-  }, [user, profile])
+  const role = profile?.role || 'paciente'
+  const copy = COPY[role] || COPY.paciente
+  const fields = PROFILE_FIELDS[role] || PROFILE_FIELDS.paciente
+  const missing = fields.filter(([key]) => !isFilled(profile?.[key]))
+  const completeness = Math.round(((fields.length - missing.length) / fields.length) * 100)
 
-  // Loading state
-  if (authLoading || loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          <Loader className="h-8 w-8 text-[#00C853] animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">Cargando dashboard...</p>
-        </motion.div>
-      </div>
-    )
-  }
+  const now = Date.now()
+  const upcoming = appointments
+    .filter((a) => a.status !== 'cancelada' && a.status !== 'completada' && new Date(a.fecha_hora).getTime() >= now)
+    .sort((a, b) => new Date(a.fecha_hora) - new Date(b.fecha_hora))
+  const next = upcoming[0]
+  const nextWith = next ? otherPerson(next, user.id) : null
+  const iConfirmed = next ? (next.user1_id === user.id ? next.confirmado_por_user1 : next.confirmado_por_user2) : false
 
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">Error al cargar el dashboard: {error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          >
-            Reintentar
-          </button>
-        </div>
-      </div>
-    )
-  }
-
-  // Stats por defecto si no hay datos
-  const displayStats = stats || {
-    totalUsers: 0,
-    estudiantes: 0,
-    pacientes: 0,
-    dentameaters: 0,
-    matchesActivos: 0,
-    citasProgramadas: 0,
-    profileCompleteness: 0,
-    feedbackRecibido: { count: 0, average: 0 },
-    progresoDelMes: { percentage: 0, change: 0 }
-  }
-
-  const recentActivity = []
-
-  const statsData = [
-    {
-      name: 'Usuarios Totales',
-      value: displayStats.totalUsers.toString(),
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
-      change: `${displayStats.estudiantes} estudiantes, ${displayStats.pacientes} pacientes`
-    },
-    {
-      name: 'Completitud del Perfil',
-      value: `${displayStats.profileCompleteness}%`,
-      icon: Shield,
-      color: 'text-green-600',
-      bgColor: 'bg-green-100',
-      change: displayStats.profileCompleteness === 100 ? 'Perfil completo!' : 'Completa tu perfil para más matches'
-    },
-    {
-      name: 'Matches Activos',
-      value: displayStats.matchesActivos.toString(),
-      icon: Heart,
-      color: 'text-red-600',
-      bgColor: 'bg-red-100',
-      change: displayStats.matchesActivos > 0 ? '+2 esta semana' : 'Busca tu primer match'
-    },
-    {
-      name: 'Citas Programadas',
-      value: displayStats.citasProgramadas.toString(),
-      icon: Calendar,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
-      change: displayStats.citasProgramadas > 0 ? 'Próxima: Pronto' : 'No hay citas programadas'
-    }
+  const stats = [
+    { label: 'Matches', value: matches.length, icon: Heart, to: '/my-matches' },
+    { label: 'Citas', value: upcoming.length, icon: Calendar, to: '/appointments' },
+    { label: 'Perfil', value: `${completeness}%`, icon: User, to: '/profile' },
   ]
 
-  // Función para obtener icono de actividad
-  const getActivityIcon = (type) => {
-    switch (type) {
-      case 'match': return Heart
-      case 'appointment': return Calendar
-      case 'feedback': return Star
-      case 'verification': return Shield
-      default: return Clock
-    }
-  }
-
-  // Función para obtener color de actividad
-  const getActivityColor = (type) => {
-    switch (type) {
-      case 'match': return 'text-red-500'
-      case 'appointment': return 'text-green-500'
-      case 'feedback': return 'text-yellow-500'
-      case 'verification': return 'text-blue-500'
-      default: return 'text-gray-500'
-    }
-  }
-
-  const quickActions = [
-    {
-      title: 'Buscar Matches',
-      description: 'Encuentra nuevas conexiones',
-      href: '/matches',
-      icon: Users,
-      color: 'bg-gradient-to-r from-blue-500 to-blue-600'
-    },
-    {
-      title: 'Ver Matches',
-      description: 'Revisa tus matches actuales',
-      href: '/my-matches',
-      icon: Calendar,
-      color: 'bg-gradient-to-r from-green-500 to-green-600'
-    },
-    {
-      title: 'Dar Feedback',
-      description: 'Comparte tu experiencia',
-      href: '/feedback',
-      icon: MessageSquare,
-      color: 'bg-gradient-to-r from-purple-500 to-purple-600'
-    },
-    {
-      title: 'Editar Perfil',
-      description: 'Actualiza tu información',
-      href: '/profile',
-      icon: Award,
-      color: 'bg-gradient-to-r from-orange-500 to-orange-600'
-    }
+  const actions = [
+    { title: copy.discover, description: 'Revisa perfiles compatibles cerca de ti', to: '/matches', icon: Users },
+    { title: 'Mis matches', description: 'Coordina por WhatsApp y agenda', to: '/my-matches', icon: Heart },
+    { title: 'Mis citas', description: 'Confirma, reprograma o cancela', to: '/appointments', icon: Calendar },
+    { title: 'Opiniones', description: 'Evalúa tus citas atendidas', to: '/feedback', icon: Star },
   ]
-
-  const getRoleSpecificWelcome = () => {
-    switch (profile?.role) {
-      case 'paciente':
-        return {
-          title: `¡Hola ${profile.nombre}! 👋`,
-          subtitle: 'Encuentra estudiantes para tus tratamientos dentales',
-          tip: 'Mantén tu perfil actualizado con los tratamientos que necesitas para mejores matches.'
-        }
-      case 'estudiante':
-        return {
-          title: `¡Hola ${profile.nombre}! 🦷`,
-          subtitle: 'Conecta con pacientes y practica tus habilidades',
-          tip: 'Especifica tu universidad y etapa de formación para conectar con casos apropiados.'
-        }
-      case 'dentameeter':
-        return {
-          title: `¡Hola DentaMeeter ${profile.nombre}! 💜`,
-          subtitle: 'Conecta como paciente y estudiante en el ecosistema',
-          tip: 'Como DentaMeeter, puedes conectar con toda la comunidad. ¡Aprovecha al máximo!'
-        }
-      default:
-        return {
-          title: '¡Bienvenido/a a DentaMeet!',
-          subtitle: 'Tu plataforma de conexión dental',
-          tip: 'Completa tu perfil para comenzar a conectar.'
-        }
-    }
-  }
-
-  const welcome = getRoleSpecificWelcome()
 
   return (
     <>
       <Helmet>
-        <title>Dashboard - DentaMeet</title>
-        <meta name="description" content="Dashboard principal de DentaMeet con tus estadísticas, matches y citas." />
+        <title>Panel | DentaMeet</title>
       </Helmet>
 
-      <div className="space-y-6">
-        {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-[#1A237E] to-[#00C853] rounded-2xl p-8 text-white"
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold mb-2">{welcome.title}</h1>
-              <p className="text-white/90 text-lg mb-4">{welcome.subtitle}</p>
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                <p className="text-sm">{welcome.tip}</p>
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <div className="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center">
-                <Heart className="w-12 h-12 text-white" />
-              </div>
-            </div>
-          </div>
-        </motion.div>
+      <PageHeader
+        title={profile?.nombre ? `Hola, ${profile.nombre}` : 'Hola'}
+        subtitle={copy.subtitle}
+        actions={
+          <Link to="/matches" className="btn-primary">
+            <Heart className="h-4 w-4" aria-hidden="true" />
+            {copy.discover}
+          </Link>
+        }
+      />
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {statsData.map((stat, index) => (
-            <motion.div
-              key={stat.name}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
-            >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                  <p className="text-sm text-gray-500 mt-1">{stat.change}</p>
-                </div>
-                <div className={`p-3 rounded-lg ${stat.bgColor}`}>
-                  <stat.icon className={`w-6 h-6 ${stat.color}`} />
-                </div>
-              </div>
-            </motion.div>
-          ))}
+      {error && (
+        <div role="alert" className="mb-6 flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900">
+          <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" aria-hidden="true" />
+          <p className="text-sm">{error}</p>
         </div>
+      )}
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Quick Actions */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="lg:col-span-2"
-          >
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Acciones Rápidas</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {quickActions.map((action, index) => (
-                <motion.a
-                  key={action.title}
-                  href={action.href}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="block p-6 rounded-xl text-white hover:scale-105 transition-transform"
-                  style={{ background: action.color }}
-                >
-                  <action.icon className="w-8 h-8 mb-3" />
-                  <h3 className="text-lg font-semibold mb-1">{action.title}</h3>
-                  <p className="text-white/90 text-sm">{action.description}</p>
-                </motion.a>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Activity & Profile */}
-          <div className="space-y-6">
-            {/* Recent Activity */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Actividad Reciente</h2>
-              <div className="space-y-4">
-                {recentActivity.length > 0 ? (
-                  recentActivity.map((activity, index) => {
-                    const IconComponent = getActivityIcon(activity.type)
-                    const iconColor = getActivityColor(activity.type)
-                    
-                    return (
-                      <div key={activity.id || index} className="flex items-start space-x-3">
-                        <div className="p-2 rounded-lg bg-gray-100">
-                          <IconComponent className={`w-4 h-4 ${iconColor}`} />
-                        </div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900">{activity.title}</p>
-                          <p className="text-xs text-gray-500">{activity.time}</p>
-                        </div>
-                      </div>
-                    )
-                  })
-                ) : (
-                  <div className="text-center py-4">
-                    <Clock className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                    <p className="text-sm text-gray-500">No hay actividad reciente</p>
-                    <p className="text-xs text-gray-400">¡Empieza a hacer matches!</p>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-            {/* Profile Completion */}
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Completar Perfil</h2>
-                <span className="text-sm text-gray-500">{displayStats.profileCompleteness}% completado</span>
-              </div>
-              <div className="bg-gray-200 rounded-full h-2">
-                <div className="bg-gradient-to-r from-[#1A237E] to-[#00C853] h-2 rounded-full" style={{ width: `${displayStats.profileCompleteness}%` }}></div>
-              </div>
-              <p className="text-sm text-gray-600 mt-3">
-                {displayStats.profileCompleteness >= 85 
-                  ? '¡Perfil excelente! Seguí así.' 
-                  : 'Completa tu perfil para más matches.'}
+      {/* Lo siguiente que tienes que hacer: la superficie azul noche del hero */}
+      <section aria-labelledby="siguiente" className="app-card-ink relative overflow-hidden p-6 sm:p-7 mb-6">
+        <div className="absolute -top-24 -right-16 h-56 w-56 rounded-full bg-emerald-400/20 blur-3xl" aria-hidden="true" />
+        <h2 id="siguiente" className="relative text-sm font-bold text-emerald-300 mb-3">Lo siguiente</h2>
+        {loading ? (
+          <div className="relative space-y-2 animate-pulse motion-reduce:animate-none" aria-label="Cargando">
+            <div className="h-7 w-2/3 rounded-lg bg-white/10" />
+            <div className="h-4 w-1/2 rounded bg-white/10" />
+          </div>
+        ) : next ? (
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <div className="min-w-0">
+              <p className="text-2xl sm:text-3xl font-black tracking-tight text-balance">
+                {next.tratamiento}
+                {nextWith?.nombre && <span className="font-bold text-white/70"> con {nextWith.nombre}</span>}
               </p>
-              {displayStats.profileCompleteness < 85 && (
-                <motion.a
-                  href="/profile"
-                  className="inline-block mt-3 text-sm text-[#00C853] hover:text-[#00B04F] font-medium"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  Completar perfil →
-                </motion.a>
-              )}
-            </motion.div>
+              <p className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-white/75">
+                <span className="inline-flex items-center gap-1.5"><Calendar className="h-4 w-4" aria-hidden="true" />{formatDate(next.fecha_hora)}</span>
+                <span className="inline-flex items-center gap-1.5 tabular-nums"><Clock className="h-4 w-4" aria-hidden="true" />{formatTime(next.fecha_hora)}</span>
+                {next.notas && <span className="inline-flex items-center gap-1.5 min-w-0"><MapPin className="h-4 w-4 shrink-0" aria-hidden="true" /><span className="truncate">{next.notas}</span></span>}
+              </p>
+            </div>
+            <Link to="/appointments" className={iConfirmed ? 'btn-secondary shrink-0' : 'btn-primary shrink-0'}>
+              {iConfirmed ? <><CheckCircle2 className="h-4 w-4" aria-hidden="true" />Ver cita</> : 'Confirmar asistencia'}
+            </Link>
           </div>
-        </div>
+        ) : matches.length > 0 ? (
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <p className="text-xl sm:text-2xl font-black tracking-tight text-balance max-w-lg">
+              Tienes {matches.length === 1 ? 'un match' : `${matches.length} matches`} sin cita. Escríbele y agenden una hora.
+            </p>
+            <Link to="/my-matches" className="btn-primary shrink-0">Ver mis matches</Link>
+          </div>
+        ) : (
+          <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+            <p className="text-xl sm:text-2xl font-black tracking-tight text-balance max-w-lg">
+              Aún no tienes matches. Da like a quienes te interesen y, si es mutuo, aparecerán aquí.
+            </p>
+            <Link to="/matches" className="btn-primary shrink-0">{copy.discover}</Link>
+          </div>
+        )}
+      </section>
+
+      {/* Resumen */}
+      <dl className="grid grid-cols-3 gap-3 sm:gap-4 mb-6">
+        {stats.map(({ label, value, icon: Icon, to }) => (
+          <Link key={label} to={to} className="app-card p-4 sm:p-5 hover:border-slate-300 transition-colors focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-500/30">
+            <dt className="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-600">
+              <Icon className="h-4 w-4 text-emerald-600 shrink-0" aria-hidden="true" />
+              <span className="truncate">{label}</span>
+            </dt>
+            <dd className="mt-2 text-2xl sm:text-3xl font-black text-slate-900 tabular-nums">
+              {loading && typeof value === 'number' ? '·' : value}
+            </dd>
+          </Link>
+        ))}
+      </dl>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Accesos */}
+        <nav aria-label="Accesos rápidos" className="lg:col-span-2 app-card divide-y divide-slate-100 overflow-hidden">
+          {actions.map(({ title, description, to, icon: Icon }) => (
+            <Link
+              key={to}
+              to={to}
+              className="flex items-center gap-4 p-4 sm:p-5 hover:bg-slate-50 transition-colors focus-visible:outline-none focus-visible:bg-emerald-50"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+                <Icon className="h-5 w-5" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-bold text-slate-900">{title}</span>
+                <span className="block text-sm text-slate-600">{description}</span>
+              </span>
+              <ChevronRight className="h-5 w-5 text-slate-400 shrink-0" aria-hidden="true" />
+            </Link>
+          ))}
+        </nav>
+
+        {/* Perfil */}
+        <section aria-labelledby="perfil-progreso" className="app-card p-5 sm:p-6">
+          <div className="flex items-baseline justify-between mb-3">
+            <h2 id="perfil-progreso" className="text-lg font-black text-slate-900">Tu perfil</h2>
+            <span className="text-sm font-semibold text-slate-600 tabular-nums">{completeness}%</span>
+          </div>
+          <div
+            className="h-2 rounded-full bg-slate-100 overflow-hidden"
+            role="progressbar"
+            aria-valuenow={completeness}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Perfil completado"
+          >
+            <div className="h-full rounded-full bg-emerald-400 transition-[width] duration-500" style={{ width: `${completeness}%` }} />
+          </div>
+          {missing.length === 0 ? (
+            <p className="mt-4 text-sm text-slate-600">Tu perfil está completo. Así es más fácil que te encuentren.</p>
+          ) : (
+            <>
+              <p className="mt-4 text-sm text-slate-600">Completa estos datos para mejorar tus matches:</p>
+              <ul className="mt-2 flex flex-wrap gap-2">
+                {missing.map(([key, label]) => (
+                  <li key={key} className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">{label}</li>
+                ))}
+              </ul>
+              <Link to="/profile" className="mt-4 inline-flex items-center gap-1 text-sm font-bold text-emerald-700 hover:text-emerald-800">
+                Completar perfil <ChevronRight className="h-4 w-4" aria-hidden="true" />
+              </Link>
+            </>
+          )}
+        </section>
       </div>
     </>
   )

@@ -1,255 +1,179 @@
 import React, { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
 import { Helmet } from 'react-helmet'
-import { Heart, MessageCircle, Calendar, ArrowLeft, Users } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Heart, MessageCircle, Calendar, Users, MapPin, GraduationCap, AlertCircle } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { MatchService } from '@/services/MatchService'
-import { Button } from '@/components/ui/button'
+import { MatchService } from '@/services/matchService'
 import { toast } from '@/components/ui/use-toast'
+import PageHeader from '@/components/layout/PageHeader'
+import SafetyDialog from '@/components/matches/SafetyDialog'
+
+const ROLE_LABEL = { estudiante: 'Estudiante', paciente: 'Paciente', dentameeter: 'DentaMeeter' }
+
+const initials = (p) =>
+  `${(p?.nombre || '').trim().charAt(0)}${(p?.apellido || '').trim().charAt(0)}`.toUpperCase() || '?'
 
 const MyMatches = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [matches, setMatches] = useState([])
   const [loading, setLoading] = useState(true)
-
-  // Protección: si no hay usuario, redirigir a /auth
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth', { replace: true })
-    }
-  }, [user, navigate])
+  const [error, setError] = useState(false)
 
   useEffect(() => {
+    if (!user?.id) return
+    let active = true
     const loadMatches = async () => {
-      if (!user?.id) {
-        console.log('MyMatches: No user ID available')
-        setLoading(false)
-        return
-      }
-      
       try {
-        console.log('MyMatches: Loading matches for user:', user.id)
         setLoading(true)
+        setError(false)
         const userMatches = await MatchService.getMatches(user.id)
-        console.log('MyMatches: Loaded matches:', userMatches?.length || 0)
-        setMatches(userMatches)
-      } catch (error) {
-        console.error('MyMatches: Error loading matches:', error)
-        toast({
-          title: "Error",
-          description: "No se pudieron cargar tus matches",
-          variant: "destructive"
-        })
+        if (active) setMatches(userMatches)
+      } catch {
+        if (active) setError(true)
       } finally {
-        setLoading(false)
+        if (active) setLoading(false)
       }
     }
-
     loadMatches()
+    return () => { active = false }
   }, [user?.id])
 
-  const handleSendMessage = (match) => {
-    const otherUser = match.user1_id === user.id ? match.user2 : match.user1
-    const message = `¡Hola ${otherUser.nombre}! Somos match en DentaMeet 🦷✨ Me gustaría coordinar contigo.`
+  const handleSendMessage = (otherUser) => {
+    const message = `¡Hola ${otherUser.nombre}! Somos match en DentaMeet. Me gustaría coordinar una hora contigo.`
     const phoneNumber = otherUser.telefono?.replace(/[^\d]/g, '') || ''
-    
+
     if (phoneNumber) {
-      window.open(`https://wa.me/56${phoneNumber}?text=${encodeURIComponent(message)}`, '_blank')
+      window.open(`https://wa.me/56${phoneNumber.replace(/^56/, '')}?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer')
     } else {
       toast({
-        title: "Información de contacto no disponible",
-        description: "Este usuario no ha proporcionado su número de WhatsApp",
-        variant: "destructive"
+        title: 'Sin número de WhatsApp',
+        description: `${otherUser.nombre || 'Esta persona'} aún no agrega su teléfono a su perfil.`,
+        variant: 'destructive'
       })
     }
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center">
-        <motion.div
-          className="text-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <motion.div
-            className="w-16 h-16 bg-[#00C853] rounded-full mx-auto mb-4 flex items-center justify-center"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          >
-            <Heart className="h-8 w-8 text-white" />
-          </motion.div>
-          <h2 className="text-xl font-semibold text-gray-700">Cargando tus matches...</h2>
-        </motion.div>
-      </div>
-    )
   }
 
   return (
     <>
       <Helmet>
-        <title>Mis Matches - DentaMeet</title>
-        <meta name="description" content="Revisa y gestiona todos tus matches en DentaMeet" />
+        <title>Mis matches | DentaMeet</title>
       </Helmet>
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-green-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.history.back()}
-                  className="flex items-center space-x-2"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span>Volver</span>
-                </Button>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">Mis Matches</h1>
-                  <p className="text-sm text-gray-600">
-                    {matches.length} {matches.length === 1 ? 'match activo' : 'matches activos'}
-                  </p>
-                </div>
-              </div>
+      <PageHeader
+        title="Mis matches"
+        subtitle={
+          loading
+            ? 'Cargando tus matches…'
+            : matches.length === 0
+              ? 'Cuando ambos se den like, aparecerán aquí.'
+              : `${matches.length} ${matches.length === 1 ? 'match activo' : 'matches activos'}. Escríbele y agenden una hora.`
+        }
+        actions={
+          <Link to="/matches" className="btn-secondary">
+            <Users className="h-4 w-4" aria-hidden="true" />
+            Descubrir más
+          </Link>
+        }
+      />
 
-              <Button
-                onClick={() => navigate('/matches')}
-                variant="outline"
-                size="sm"
-                className="flex items-center space-x-2"
-              >
-                <Users className="h-4 w-4" />
-                <span>Buscar más</span>
-              </Button>
+      {error ? (
+        <div role="alert" className="app-card p-6 flex flex-col items-start gap-4 sm:flex-row sm:items-center">
+          <AlertCircle className="h-6 w-6 text-rose-600 shrink-0" aria-hidden="true" />
+          <p className="flex-1 text-slate-700">No pudimos cargar tus matches. Revisa tu conexión e intenta de nuevo.</p>
+          <button type="button" className="btn-secondary" onClick={() => window.location.reload()}>Reintentar</button>
+        </div>
+      ) : loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" role="status" aria-label="Cargando matches">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="app-card p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="h-12 w-12 rounded-full bg-slate-100 animate-pulse motion-reduce:animate-none" />
+                <div className="h-5 w-32 rounded bg-slate-100 animate-pulse motion-reduce:animate-none" />
+              </div>
+              <div className="h-4 w-3/4 rounded bg-slate-100 animate-pulse motion-reduce:animate-none" />
+              <div className="h-11 w-full rounded-xl bg-slate-100 animate-pulse motion-reduce:animate-none" />
             </div>
+          ))}
+        </div>
+      ) : matches.length === 0 ? (
+        <div className="app-card text-center px-6 py-12 max-w-md mx-auto">
+          <div className="w-16 h-16 bg-emerald-50 rounded-2xl mx-auto mb-5 flex items-center justify-center">
+            <Heart className="h-8 w-8 text-emerald-700" aria-hidden="true" />
           </div>
+          <h2 className="text-xl font-black text-slate-900 mb-2">Aún no tienes matches</h2>
+          <p className="text-slate-600 mb-6">Da like a los perfiles que te interesen. Si la otra persona también lo hace, será un match.</p>
+          <button type="button" onClick={() => navigate('/matches')} className="btn-primary">
+            Empezar a descubrir
+          </button>
         </div>
+      ) : (
+        <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {matches.map((match) => {
+            const otherUser = (match.user1_id === user.id ? match.user2 : match.user1) || {}
+            const since = new Date(match.created_at).toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })
 
-        <div className="max-w-4xl mx-auto p-4">
-          {matches.length === 0 ? (
-            /* Estado vacío */
-            <motion.div
-              className="text-center py-16"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="w-24 h-24 bg-gradient-to-br from-[#1A237E]/10 to-[#00C853]/10 rounded-full mx-auto mb-6 flex items-center justify-center">
-                <Heart className="h-12 w-12 text-gray-400" />
-              </div>
-              
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                Aún no tienes matches
-              </h2>
-              
-              <p className="text-gray-600 mb-6 max-w-sm mx-auto">
-                ¡Empieza a explorar perfiles para encontrar tu primer match!
-              </p>
+            return (
+              <li key={match.id} className="app-card p-5 flex flex-col">
+                <div className="flex items-center gap-3">
+                  <span className="h-12 w-12 shrink-0 rounded-full bg-slate-900 text-white flex items-center justify-center font-black">
+                    {initials(otherUser)}
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="font-black text-lg text-slate-900 truncate">
+                      {otherUser.nombre} {otherUser.apellido}
+                    </h2>
+                    <p className="text-sm text-slate-600">
+                      {ROLE_LABEL[otherUser.role] || 'Usuario'} · match desde el {since}
+                    </p>
+                  </div>
+                </div>
 
-              <Button
-                onClick={() => navigate('/matches')}
-                className="bg-gradient-to-r from-[#00C853] to-[#4CAF50] hover:from-[#00B04F] hover:to-[#45A049] text-white px-8 py-3 rounded-xl font-semibold shadow-lg"
-              >
-                <Users className="mr-2 h-4 w-4" />
-                Buscar matches
-              </Button>
-            </motion.div>
-          ) : (
-            /* Lista de matches */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {matches.map((match, index) => {
-                const otherUser = match.user1_id === user.id ? match.user2 : match.user1
-                
-                return (
-                  <motion.div
-                    key={match.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-shadow"
-                  >
-                    {/* Card Header */}
-                    <div className="bg-gradient-to-r from-[#1A237E] to-[#00C853] p-4 text-white">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                          <Heart className="h-6 w-6" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg">{otherUser.nombre} {otherUser.apellido}</h3>
-                          <p className="text-white/80 text-sm capitalize">{otherUser.role}</p>
-                        </div>
-                      </div>
+                <dl className="mt-4 space-y-1.5 text-sm text-slate-700">
+                  {otherUser.universidad && (
+                    <div className="flex items-start gap-2">
+                      <dt className="sr-only">Universidad</dt>
+                      <GraduationCap className="h-4 w-4 mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />
+                      <dd>{otherUser.universidad}{otherUser.etapa_formacion ? ` · ${otherUser.etapa_formacion}` : ''}</dd>
                     </div>
-
-                    {/* Card Content */}
-                    <div className="p-4">
-                      <div className="space-y-3 mb-4">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className="font-medium">Edad:</span>
-                          <span className="ml-2">{otherUser.edad} años</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className="font-medium">Ubicación:</span>
-                          <span className="ml-2">{otherUser.comuna}, {otherUser.region}</span>
-                        </div>
-                        {otherUser.universidad && (
-                          <div className="flex items-center text-sm text-gray-600">
-                            <span className="font-medium">Universidad:</span>
-                            <span className="ml-2">{otherUser.universidad}</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {otherUser.descripcion && (
-                        <div className="mb-4">
-                          <p className="text-sm text-gray-700 line-clamp-3">
-                            {otherUser.descripcion}
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Actions */}
-                      <div className="flex space-x-2">
-                        <Button
-                          onClick={() => handleSendMessage(match)}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white"
-                          size="sm"
-                        >
-                          <MessageCircle className="h-4 w-4 mr-2" />
-                          WhatsApp
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                        >
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Agendar
-                        </Button>
-                      </div>
+                  )}
+                  {(otherUser.comuna || otherUser.region) && (
+                    <div className="flex items-start gap-2">
+                      <dt className="sr-only">Ubicación</dt>
+                      <MapPin className="h-4 w-4 mt-0.5 shrink-0 text-emerald-700" aria-hidden="true" />
+                      <dd>{[otherUser.comuna, otherUser.region].filter(Boolean).join(', ')}</dd>
                     </div>
+                  )}
+                </dl>
 
-                    {/* Match Date */}
-                    <div className="px-4 pb-4">
-                      <p className="text-xs text-gray-500">
-                        Match desde {new Date(match.created_at).toLocaleDateString('es-ES', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })}
-                      </p>
-                    </div>
-                  </motion.div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </div>
+                {otherUser.descripcion && (
+                  <p className="mt-3 text-sm leading-relaxed text-slate-600 line-clamp-3">{otherUser.descripcion}</p>
+                )}
+
+                <div className="mt-auto pt-5 grid grid-cols-2 gap-2">
+                  <button type="button" onClick={() => handleSendMessage(otherUser)} className="btn-primary px-3">
+                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                    WhatsApp
+                  </button>
+                  <Link to={`/appointments?nueva=${match.id}`} className="btn-secondary px-3">
+                    <Calendar className="h-4 w-4" aria-hidden="true" />
+                    Agendar
+                  </Link>
+                </div>
+                <SafetyDialog
+                  person={otherUser}
+                  onDone={() => setMatches((list) => list.filter((m) => m.id !== match.id))}
+                  trigger={
+                    <button type="button" className="mt-3 self-center min-h-[40px] px-3 text-sm font-semibold text-slate-500 hover:text-rose-700 rounded-lg">
+                      Reportar o bloquear
+                    </button>
+                  }
+                />
+              </li>
+            )
+          })}
+        </ul>
+      )}
     </>
   )
 }
